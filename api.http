@@ -1,0 +1,112 @@
+### SellerGraph blockchain API — run from GoLand / IntelliJ HTTP client (or VS Code REST Client).
+### Amounts are minor units (fen). Start the service with: go run ./cmd/sgchain serve -config configs/mock.json
+@base = http://localhost:12080
+@id = LN-2026-0001
+
+### chain / backend info
+GET {{base}}/v1/chain
+
+### 1. register the approved credit decision (WeBank sole lender by default)
+POST {{base}}/v1/loans
+Content-Type: application/json
+
+{
+  "loanId": "{{id}}", "sellerId": "seller-douyin-778899", "tier": 2,
+  "principal": 10000000, "annualRateBps": 1200, "tenorDays": 120,
+  "sweepRateBps": 4300, "sweepCapBps": 6300, "graceDays": 20,
+  "decision": { "doc": { "pd": 0.031, "segment": "N1", "limitCeiling": 12000000 }, "uri": "s3://webank-sg/decisions/{{id}}.json" }
+}
+
+### 1b. multi-bank variant (needs funders vcb/tcb in config): shares must sum to principal
+POST {{base}}/v1/loans
+Content-Type: application/json
+
+{
+  "loanId": "LN-2026-0002", "sellerId": "seller-2", "tier": 1, "principal": 3000000,
+  "annualRateBps": 1100, "tenorDays": 60, "sweepRateBps": 3000, "sweepCapBps": 6000, "graceDays": 5,
+  "decision": { "text": "decision package LN-2026-0002" },
+  "funding": [ { "funder": "webank", "amount": 2000000 }, { "funder": "vcb", "amount": 1000000 } ]
+}
+
+### 1c. a funder confirms its share
+POST {{base}}/v1/loans/LN-2026-0002/funding/confirm
+Content-Type: application/json
+
+{ "funder": "vcb" }
+
+### 1d. human officer sign-off (required for tier 2 above the threshold or when the orchestrator flags review)
+POST {{base}}/v1/loans/{{id}}/officer-decision
+Content-Type: application/json
+
+{ "approved": true, "review": { "doc": { "officer": "co-17", "anomaliesConfirmed": ["purchase price +12% vs 3-month avg"] } } }
+
+### 2. one click, one payment — straight to the suppliers
+POST {{base}}/v1/loans/{{id}}/disburse
+Content-Type: application/json
+
+{ "bankTxRef": "WB202610040001", "deliveryDays": 10,
+  "payments": [ { "supplierId": "91310000MA1FL0001X", "amount": 6000000 }, { "supplierId": "91440300MA5F00002Y", "amount": 4000000 } ] }
+
+### 3. supplier delivery proof (check 5)
+POST {{base}}/v1/loans/{{id}}/deliveries
+Content-Type: application/json
+
+{ "line": 0, "waybillNo": "SF1234567890" }
+
+### 4. repayment (sweep / debit / prepayment); extRef is the idempotency key
+POST {{base}}/v1/loans/{{id}}/repayments
+Content-Type: application/json
+
+{ "amount": 2150000, "source": "proportional_sweep", "extRef": "SWP-0001",
+  "notice": { "doc": { "payout": 5000000, "rate": "43%" } } }
+
+### 5. cumulative floor checkpoint (milestone=true turns any shortfall into overdue)
+POST {{base}}/v1/loans/{{id}}/floor-checkpoints
+Content-Type: application/json
+
+{ "floorCumulative": 3000000, "milestone": false }
+
+### 6. monitoring alert / covenant event (Agent 5 pipeline)
+POST {{base}}/v1/loans/{{id}}/alerts
+Content-Type: application/json
+
+{ "level": "yellow", "code": "SALES_DROP", "evidence": { "doc": { "cause": "seasonal" } } }
+
+###
+POST {{base}}/v1/loans/{{id}}/covenant-events
+Content-Type: application/json
+
+{ "code": "STORE_DATA_SHARING", "breached": false, "evidence": { "text": "daily check ok" } }
+
+### 7. officer actions
+POST {{base}}/v1/loans/{{id}}/restructure
+Content-Type: application/json
+
+{ "extraDays": 30, "newSweepRateBps": 3000, "reason": { "doc": { "plan": "Agent 6 draft", "approvedBy": "co-17" } } }
+
+### reads
+GET {{base}}/v1/loans/{{id}}
+
+###
+GET {{base}}/v1/loans/{{id}}/payoff
+
+###
+GET {{base}}/v1/loans?offset=0&limit=20
+
+###
+GET {{base}}/v1/portfolio
+
+### audit trail
+POST {{base}}/v1/audit/anchors
+Content-Type: application/json
+
+{ "subject": "APP-2026-0001", "kind": "ml_output", "content": { "doc": { "pd": 0.031, "factors": ["season_index", "refund_rate"] } } }
+
+###
+GET {{base}}/v1/audit/anchors/{{id}}/verify
+
+###
+POST {{base}}/v1/audit/verify
+Content-Type: application/json
+
+{ "content": { "doc": { "pd": 0.031, "segment": "N1", "limitCeiling": 12000000 } } }

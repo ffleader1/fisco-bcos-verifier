@@ -1,0 +1,9 @@
+# Normalize line endings; shell scripts must stay LF or bash breaks on the Linux server.
+* text=auto
+*.sh text eol=lf
+Makefile text eol=lf
+
+# Generated / vendored files: keep out of diffs and GitHub language stats.
+contracts/build/** linguist-generated=true -diff
+internal/api/docs/swagger-ui/** linguist-vendored=true -diff
+internal/api/docs/openapi.json linguist-generated=true

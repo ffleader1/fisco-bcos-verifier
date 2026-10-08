@@ -1,0 +1,24 @@
+{
+  "listen": ":12080",
+  "apiToken": "",
+  "ledger": "fisco",
+  "refSalt": "CHANGE-ME-to-a-long-random-secret",
+  "defaultFunder": "webank",
+  "node": {
+    "nodeURL": "127.0.0.1:20200",
+    "groupId": 1,
+    "chainId": 1,
+    "caFile": "../chain/sdk/ca.crt",
+    "certFile": "../chain/sdk/sdk.crt",
+    "keyFile": "../chain/sdk/sdk.key"
+  },
+  "contractsFile": "../chain/contracts.json",
+  "keys": {
+    "admin": "../keys/admin.key",
+    "operator": "../keys/operator.key",
+    "officer": "../keys/officer.key",
+    "monitor": "../keys/monitor.key",
+    "funders": { "webank": "operator" }
+  },
+  "policy": { "maxRateBps": 2400, "officerThreshold": 50000000, "maxFutureSkewSec": 300 }
+}

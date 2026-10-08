@@ -1,0 +1,39 @@
+# --- secrets: never commit ---
+# role signing keys (sgchain keygen)
+/keys/
+*.key
+*.pem
+.env
+# local configs with real secrets, e.g. configs/fisco.local.json
+*.local.json
+.idea/
+
+# --- local chain data (nodes, certs, contracts.json) ---
+/chain/
+
+# --- build output ---
+/bin/
+/sgchain
+/sgchain.exe
+*.test
+*.out
+coverage.*
+
+# --- tooling ---
+/scripts/node_modules/
+node_modules/
+*.log
+
+# --- archives ---
+*.tar.gz
+*.tgz
+*.zip
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini

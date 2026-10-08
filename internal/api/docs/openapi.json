@@ -1,0 +1,4093 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SellerGraph — FISCO BCOS ledger API",
+    "version": "1.0.0",
+    "description": "Blockchain system of record for SellerGraph loans (WeBank). Amounts are minor units (fen). Times are RFC3339 or unix seconds. Click **Authorize** and paste the API token if the server sets one."
+  },
+  "servers": [
+    {
+      "url": "..",
+      "description": "this server (relative, works behind a reverse-proxy sub-path)"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "System"
+    },
+    {
+      "name": "Origination"
+    },
+    {
+      "name": "Disbursement & repayment"
+    },
+    {
+      "name": "Lifecycle"
+    },
+    {
+      "name": "Monitoring"
+    },
+    {
+      "name": "Reads"
+    },
+    {
+      "name": "Audit trail"
+    },
+    {
+      "name": "Legacy aliases (diagram 02)"
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health check (no auth)",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "backend": {
+                      "type": "string"
+                    },
+                    "blockNumber": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ledger unreachable"
+          }
+        },
+        "security": []
+      }
+    },
+    "/v1/chain": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Backend, block height, contract addresses, role accounts, policy",
+        "operationId": "chainInfo",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChainInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans": {
+      "post": {
+        "tags": [
+          "Origination"
+        ],
+        "summary": "Register an approved credit decision",
+        "operationId": "createLoan",
+        "description": "Anchors `decision.doc` (kind decision_package) and creates the loan. WeBank-only loans below the officer threshold are approved immediately.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "loanId": {
+                    "type": "string",
+                    "description": "1-32 chars [A-Za-z0-9._:-]; stored readable on chain"
+                  },
+                  "sellerId": {
+                    "type": "string",
+                    "description": "hashed with refSalt (HMAC-SHA256); never stored in clear"
+                  },
+                  "sellerRef": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{64}$",
+                    "example": "0xabababababababababababababababababababababababababababababababab",
+                    "description": "or a precomputed reference"
+                  },
+                  "tier": {
+                    "type": "integer",
+                    "format": "int64",
+                    "enum": [
+                      1,
+                      2
+                    ],
+                    "description": "1 = working capital (order based), 2 = growth capital (campaign based)"
+                  },
+                  "principal": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "minor units (fen)"
+                  },
+                  "annualRateBps": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "tenorDays": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "sweepRateBps": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "sweepCapBps": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "sweep rate must be <= cap"
+                  },
+                  "graceDays": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "humanReviewRequired": {
+                    "type": "boolean",
+                    "description": "orchestrator trigger; tier-2 above officerThreshold is forced true by the contract"
+                  },
+                  "decision": {
+                    "$ref": "#/components/schemas/Doc"
+                  },
+                  "funding": {
+                    "type": "array",
+                    "description": "omit for WeBank-only (default funder gets 100%)",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "funder": {
+                          "type": "string",
+                          "description": "configured name or 0x address"
+                        },
+                        "amount": {
+                          "type": "integer",
+                          "format": "int64"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "funder",
+                        "amount"
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "loanId",
+                  "tier",
+                  "principal",
+                  "annualRateBps",
+                  "tenorDays",
+                  "sweepRateBps",
+                  "sweepCapBps",
+                  "decision"
+                ]
+              },
+              "example": {
+                "loanId": "LN-2026-0001",
+                "sellerId": "seller-douyin-778899",
+                "tier": 2,
+                "principal": 10000000,
+                "annualRateBps": 1200,
+                "tenorDays": 120,
+                "sweepRateBps": 4300,
+                "sweepCapBps": 6300,
+                "graceDays": 20,
+                "decision": {
+                  "doc": {
+                    "pd": 0.031,
+                    "segment": "N1",
+                    "limitCeiling": 12000000
+                  },
+                  "uri": "s3://webank-sg/decisions/LN-2026-0001.json"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Reads"
+        ],
+        "summary": "List loans",
+        "operationId": "listLoans",
+        "parameters": [
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "loans": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Loan"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}": {
+      "get": {
+        "tags": [
+          "Reads"
+        ],
+        "summary": "Get a loan",
+        "operationId": "getLoan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Loan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/payoff": {
+      "get": {
+        "tags": [
+          "Reads"
+        ],
+        "summary": "Payoff quote (prepayment has no fee)",
+        "operationId": "payoff",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "RFC3339 or unix seconds"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payoff"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/funding/confirm": {
+      "post": {
+        "tags": [
+          "Origination"
+        ],
+        "summary": "Funder confirms its share (multi-bank mode)",
+        "operationId": "confirmFunding",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "funder": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "funder"
+                ]
+              },
+              "example": {
+                "funder": "vcb"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/officer-decision": {
+      "post": {
+        "tags": [
+          "Origination"
+        ],
+        "summary": "Human officer sign-off or rejection",
+        "operationId": "officerDecision",
+        "description": "Required for tier-2 above officerThreshold or when the orchestrator flagged review. `review.doc` is anchored (human_decision).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "approved": {
+                    "type": "boolean"
+                  },
+                  "review": {
+                    "$ref": "#/components/schemas/Doc"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "approved",
+                  "review"
+                ]
+              },
+              "example": {
+                "approved": true,
+                "review": {
+                  "doc": {
+                    "officer": "co-17",
+                    "anomaliesConfirmed": [
+                      "purchase price +12% vs 3-month avg"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Origination"
+        ],
+        "summary": "Cancel before disbursement (offer declined / expired)",
+        "operationId": "cancelLoan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "$ref": "#/components/schemas/Doc"
+                  },
+                  "asOf": {
+                    "$ref": "#/components/schemas/Time"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ]
+              },
+              "example": {
+                "reason": {
+                  "text": "seller declined offer"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/disburse": {
+      "post": {
+        "tags": [
+          "Disbursement & repayment"
+        ],
+        "summary": "The one payment, straight to suppliers",
+        "operationId": "disburse",
+        "description": "Payment lines must sum to the principal. A second disbursement is rejected (409).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payments": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "supplierId": {
+                          "type": "string",
+                          "description": "hashed with refSalt"
+                        },
+                        "supplierRef": {
+                          "type": "string",
+                          "pattern": "^0x[0-9a-fA-F]{64}$",
+                          "example": "0xabababababababababababababababababababababababababababababababab"
+                        },
+                        "amount": {
+                          "type": "integer",
+                          "format": "int64"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "amount"
+                      ]
+                    }
+                  },
+                  "deliveryDays": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "shipping deadline in days (default 10)"
+                  },
+                  "bankTxRef": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "payments",
+                  "bankTxRef"
+                ]
+              },
+              "example": {
+                "bankTxRef": "WB202610040001",
+                "deliveryDays": 10,
+                "payments": [
+                  {
+                    "supplierId": "91310000MA1FL0001X",
+                    "amount": 6000000
+                  },
+                  {
+                    "supplierId": "91440300MA5F00002Y",
+                    "amount": 4000000
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/repayments": {
+      "post": {
+        "tags": [
+          "Disbursement & repayment"
+        ],
+        "summary": "Record a repayment (sweep, debit, prepayment, recovery)",
+        "operationId": "recordRepayment",
+        "description": "Response adds `allocation` and `settled`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "webank_sweep",
+                      "authorized_debit",
+                      "proportional_sweep",
+                      "floor_makeup",
+                      "prepayment",
+                      "recovery",
+                      "other"
+                    ],
+                    "default": "proportional_sweep"
+                  },
+                  "extRef": {
+                    "type": "string",
+                    "description": "idempotency key (bank debit / sweep id); a duplicate returns 409"
+                  },
+                  "asOf": {
+                    "$ref": "#/components/schemas/Time"
+                  },
+                  "notice": {
+                    "$ref": "#/components/schemas/Doc"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "amount",
+                  "extRef"
+                ]
+              },
+              "example": {
+                "amount": 2150000,
+                "source": "proportional_sweep",
+                "extRef": "SWP-0001",
+                "notice": {
+                  "doc": {
+                    "payout": 5000000,
+                    "rate": "43%"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/floor-checkpoints": {
+      "post": {
+        "tags": [
+          "Disbursement & repayment"
+        ],
+        "summary": "Cumulative floor check",
+        "operationId": "checkpointFloor",
+        "description": "Shortfall raises a YELLOW alert; with milestone=true the shortfall becomes overdue. Response adds `shortfall`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "floorCumulative": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "milestone": {
+                    "type": "boolean"
+                  },
+                  "asOf": {
+                    "$ref": "#/components/schemas/Time"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "floorCumulative"
+                ]
+              },
+              "example": {
+                "floorCumulative": 3000000,
+                "milestone": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/mature": {
+      "post": {
+        "tags": [
+          "Lifecycle"
+        ],
+        "summary": "Mark matured: all remaining debt overdue, RED alert",
+        "operationId": "markMatured",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "asOf": {
+                    "$ref": "#/components/schemas/Time"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "example": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/accelerate": {
+      "post": {
+        "tags": [
+          "Lifecycle"
+        ],
+        "summary": "Demand early repayment (officer only)",
+        "operationId": "accelerate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "$ref": "#/components/schemas/Doc"
+                  },
+                  "asOf": {
+                    "$ref": "#/components/schemas/Time"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ]
+              },
+              "example": {
+                "reason": {
+                  "text": "covenant: stopped sharing store data"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/default": {
+      "post": {
+        "tags": [
+          "Lifecycle"
+        ],
+        "summary": "Declare default (officer only)",
+        "operationId": "markDefault",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "$ref": "#/components/schemas/Doc"
+                  },
+                  "asOf": {
+                    "$ref": "#/components/schemas/Time"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ]
+              },
+              "example": {
+                "reason": {
+                  "text": "seller unreachable 60 days"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/restructure": {
+      "post": {
+        "tags": [
+          "Lifecycle"
+        ],
+        "summary": "Restructure: extend maturity, new sweep rate (officer only)",
+        "operationId": "restructure",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "extraDays": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "newSweepRateBps": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "reason": {
+                    "$ref": "#/components/schemas/Doc"
+                  },
+                  "asOf": {
+                    "$ref": "#/components/schemas/Time"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ]
+              },
+              "example": {
+                "extraDays": 30,
+                "newSweepRateBps": 3000,
+                "reason": {
+                  "doc": {
+                    "plan": "Agent 6 draft",
+                    "approvedBy": "co-17"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/alerts": {
+      "post": {
+        "tags": [
+          "Monitoring"
+        ],
+        "summary": "Raise an alert (green / yellow / red)",
+        "operationId": "raiseAlert",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "level": {
+                    "type": "string",
+                    "enum": [
+                      "green",
+                      "yellow",
+                      "red"
+                    ]
+                  },
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9_]{1,32}$"
+                  },
+                  "evidence": {
+                    "$ref": "#/components/schemas/Doc"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "level",
+                  "code"
+                ]
+              },
+              "example": {
+                "level": "yellow",
+                "code": "SALES_DROP",
+                "evidence": {
+                  "doc": {
+                    "cause": "seasonal"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/covenant-events": {
+      "post": {
+        "tags": [
+          "Monitoring"
+        ],
+        "summary": "Record a covenant check result",
+        "operationId": "recordCovenantEvent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9_]{1,32}$"
+                  },
+                  "breached": {
+                    "type": "boolean"
+                  },
+                  "evidence": {
+                    "$ref": "#/components/schemas/Doc"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "code"
+                ]
+              },
+              "example": {
+                "code": "STORE_DATA_SHARING",
+                "breached": false,
+                "evidence": {
+                  "text": "daily check ok"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/deliveries": {
+      "post": {
+        "tags": [
+          "Monitoring"
+        ],
+        "summary": "Supplier delivery proof (check 5)",
+        "operationId": "recordDelivery",
+        "description": "Late shipment emits a DELIVERY_LATE covenant event. Response adds `onTime`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "line": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "waybillNo": {
+                    "type": "string"
+                  },
+                  "shippedAt": {
+                    "$ref": "#/components/schemas/Time"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "line",
+                  "waybillNo"
+                ]
+              },
+              "example": {
+                "line": 0,
+                "waybillNo": "SF1234567890"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/loans/{id}/deliveries/{line}/missing": {
+      "post": {
+        "tags": [
+          "Monitoring"
+        ],
+        "summary": "Flag a payment line with no shipment after its deadline (RED alert)",
+        "operationId": "flagMissingDelivery",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:\\-]{1,32}$"
+            },
+            "example": "LN-2026-0001"
+          },
+          {
+            "name": "line",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "asOf": {
+                    "$ref": "#/components/schemas/Time"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "example": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/portfolio": {
+      "get": {
+        "tags": [
+          "Reads"
+        ],
+        "summary": "Portfolio totals, per-funder exposure, red alerts, pending reviews",
+        "operationId": "portfolio",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audit/anchors": {
+      "post": {
+        "tags": [
+          "Audit trail"
+        ],
+        "summary": "Anchor a document hash",
+        "operationId": "anchor",
+        "description": "Provide `content.doc` (hashed canonically) or `contentHash`. Duplicate for the same subject returns 409.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "subject": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "application",
+                      "ml_output",
+                      "agent_io",
+                      "credit_memo",
+                      "risk_challenge",
+                      "human_decision",
+                      "offer_contract",
+                      "explanation",
+                      "sweep_notice",
+                      "decision_package",
+                      "other"
+                    ]
+                  },
+                  "content": {
+                    "$ref": "#/components/schemas/Doc"
+                  },
+                  "contentHash": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{64}$",
+                    "example": "0xabababababababababababababababababababababababababababababababab"
+                  },
+                  "uri": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "subject",
+                  "kind"
+                ]
+              },
+              "example": {
+                "subject": "APP-2026-0001",
+                "kind": "ml_output",
+                "content": {
+                  "doc": {
+                    "pd": 0.031,
+                    "factors": [
+                      "season_index",
+                      "refund_rate"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnchorRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audit/anchors/{subject}": {
+      "get": {
+        "tags": [
+          "Audit trail"
+        ],
+        "summary": "List anchors of a subject",
+        "operationId": "listAnchors",
+        "parameters": [
+          {
+            "name": "subject",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "subject": {
+                      "type": "string"
+                    },
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AnchorRecord"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audit/anchors/{subject}/verify": {
+      "get": {
+        "tags": [
+          "Audit trail"
+        ],
+        "summary": "Recompute the subject's hash chain",
+        "operationId": "verifyChain",
+        "parameters": [
+          {
+            "name": "subject",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "LN-2026-0001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": {
+                      "type": "boolean"
+                    },
+                    "records": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "head": {
+                      "type": "string",
+                      "pattern": "^0x[0-9a-fA-F]{64}$",
+                      "example": "0xabababababababababababababababababababababababababababababababab"
+                    },
+                    "brokenAt": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audit/verify": {
+      "post": {
+        "tags": [
+          "Audit trail"
+        ],
+        "summary": "Was this exact document anchored? Where and when?",
+        "operationId": "verifyContent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "$ref": "#/components/schemas/Doc"
+                  },
+                  "contentHash": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{64}$",
+                    "example": "0xabababababababababababababababababababababababababababababababab"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "example": {
+                "content": {
+                  "doc": {
+                    "pd": 0.031,
+                    "segment": "N1",
+                    "limitCeiling": 12000000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "contentHash": {
+                      "type": "string",
+                      "pattern": "^0x[0-9a-fA-F]{64}$",
+                      "example": "0xabababababababababababababababababababababababababababababababab"
+                    },
+                    "found": {
+                      "type": "boolean"
+                    },
+                    "record": {
+                      "$ref": "#/components/schemas/AnchorRecord"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blockchain/create-loan": {
+      "post": {
+        "tags": [
+          "Legacy aliases (diagram 02)"
+        ],
+        "summary": "Alias of POST /v1/loans",
+        "operationId": "legacyCreateLoan",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "loanId": {
+                    "type": "string",
+                    "description": "1-32 chars [A-Za-z0-9._:-]; stored readable on chain"
+                  },
+                  "sellerId": {
+                    "type": "string",
+                    "description": "hashed with refSalt (HMAC-SHA256); never stored in clear"
+                  },
+                  "sellerRef": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{64}$",
+                    "example": "0xabababababababababababababababababababababababababababababababab",
+                    "description": "or a precomputed reference"
+                  },
+                  "tier": {
+                    "type": "integer",
+                    "format": "int64",
+                    "enum": [
+                      1,
+                      2
+                    ],
+                    "description": "1 = working capital (order based), 2 = growth capital (campaign based)"
+                  },
+                  "principal": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "minor units (fen)"
+                  },
+                  "annualRateBps": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "tenorDays": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "sweepRateBps": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "sweepCapBps": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "sweep rate must be <= cap"
+                  },
+                  "graceDays": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "humanReviewRequired": {
+                    "type": "boolean",
+                    "description": "orchestrator trigger; tier-2 above officerThreshold is forced true by the contract"
+                  },
+                  "decision": {
+                    "$ref": "#/components/schemas/Doc"
+                  },
+                  "funding": {
+                    "type": "array",
+                    "description": "omit for WeBank-only (default funder gets 100%)",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "funder": {
+                          "type": "string",
+                          "description": "configured name or 0x address"
+                        },
+                        "amount": {
+                          "type": "integer",
+                          "format": "int64"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "funder",
+                        "amount"
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "loanId",
+                  "tier",
+                  "principal",
+                  "annualRateBps",
+                  "tenorDays",
+                  "sweepRateBps",
+                  "sweepCapBps",
+                  "decision"
+                ]
+              },
+              "example": {
+                "loanId": "LN-2026-0001",
+                "sellerId": "seller-douyin-778899",
+                "tier": 2,
+                "principal": 10000000,
+                "annualRateBps": 1200,
+                "tenorDays": 120,
+                "sweepRateBps": 4300,
+                "sweepCapBps": 6300,
+                "graceDays": 20,
+                "decision": {
+                  "doc": {
+                    "pd": 0.031,
+                    "segment": "N1",
+                    "limitCeiling": 12000000
+                  },
+                  "uri": "s3://webank-sg/decisions/LN-2026-0001.json"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/blockchain/disburse": {
+      "post": {
+        "tags": [
+          "Legacy aliases (diagram 02)"
+        ],
+        "summary": "Alias of POST /v1/loans/{id}/disburse with loanId in the body",
+        "operationId": "legacyDisburse",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payments": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "supplierId": {
+                          "type": "string",
+                          "description": "hashed with refSalt"
+                        },
+                        "supplierRef": {
+                          "type": "string",
+                          "pattern": "^0x[0-9a-fA-F]{64}$",
+                          "example": "0xabababababababababababababababababababababababababababababababab"
+                        },
+                        "amount": {
+                          "type": "integer",
+                          "format": "int64"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "amount"
+                      ]
+                    }
+                  },
+                  "deliveryDays": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "shipping deadline in days (default 10)"
+                  },
+                  "bankTxRef": {
+                    "type": "string"
+                  },
+                  "loanId": {
+                    "type": "string",
+                    "example": "LN-2026-0001"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "payments",
+                  "bankTxRef",
+                  "loanId"
+                ]
+              },
+              "example": {
+                "bankTxRef": "WB202610040001",
+                "deliveryDays": 10,
+                "payments": [
+                  {
+                    "supplierId": "91310000MA1FL0001X",
+                    "amount": 6000000
+                  },
+                  {
+                    "supplierId": "91440300MA5F00002Y",
+                    "amount": 4000000
+                  }
+                ],
+                "loanId": "LN-2026-0001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/repayment": {
+      "post": {
+        "tags": [
+          "Legacy aliases (diagram 02)"
+        ],
+        "summary": "Alias of POST /v1/loans/{id}/repayments with loanId in the body",
+        "operationId": "legacyRepayment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "webank_sweep",
+                      "authorized_debit",
+                      "proportional_sweep",
+                      "floor_makeup",
+                      "prepayment",
+                      "recovery",
+                      "other"
+                    ],
+                    "default": "proportional_sweep"
+                  },
+                  "extRef": {
+                    "type": "string",
+                    "description": "idempotency key (bank debit / sweep id); a duplicate returns 409"
+                  },
+                  "asOf": {
+                    "$ref": "#/components/schemas/Time"
+                  },
+                  "notice": {
+                    "$ref": "#/components/schemas/Doc"
+                  },
+                  "loanId": {
+                    "type": "string",
+                    "example": "LN-2026-0001"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "amount",
+                  "extRef",
+                  "loanId"
+                ]
+              },
+              "example": {
+                "amount": 2150000,
+                "source": "proportional_sweep",
+                "extRef": "SWP-0001",
+                "notice": {
+                  "doc": {
+                    "payout": 5000000,
+                    "rate": "43%"
+                  }
+                },
+                "loanId": "LN-2026-0001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/portfolio": {
+      "get": {
+        "tags": [
+          "Legacy aliases (diagram 02)"
+        ],
+        "summary": "Alias of GET /v1/portfolio",
+        "operationId": "legacyPortfolio",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "missing/invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "signing key lacks the role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "wrong status or duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "chain/node error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "value of apiToken / SG_API_TOKEN"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "invalid",
+                  "unauthorized",
+                  "not_found",
+                  "bad_status",
+                  "duplicate",
+                  "chain",
+                  "unauthenticated"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "Time": {
+        "description": "RFC3339 string or unix seconds. Omit to use current chain time.",
+        "oneOf": [
+          {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-08T10:00:00Z"
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "example": 1791464947
+          }
+        ]
+      },
+      "Doc": {
+        "type": "object",
+        "properties": {
+          "doc": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "JSON document. Hashed canonically (sorted keys, SHA-256) and anchored in the AuditTrail; its hash goes on chain."
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$",
+            "example": "0xabababababababababababababababababababababababababababababababab",
+            "description": "Precomputed 32-byte hash (not anchored)."
+          },
+          "text": {
+            "type": "string",
+            "description": "Free text; SHA-256 goes on chain (not anchored)."
+          },
+          "uri": {
+            "type": "string",
+            "description": "Where the original document is stored (recorded in the anchor event)."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Provide ONE of doc, hash or text."
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "LoanCreated"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Tx": {
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string"
+          },
+          "blockNumber": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "Allocation": {
+        "type": "object",
+        "properties": {
+          "toOverdueInterest": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "toOverduePrincipal": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "toInterest": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "toPrincipal": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "excess": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Repayment split: overdue interest -> overdue principal -> current interest -> principal; excess becomes refundDue."
+      },
+      "FundingView": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "webank"
+          },
+          "address": {
+            "type": "string",
+            "example": "0x868dacf3fd9d4228e6da97ec27b17e6e128df91d"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "confirmed": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "line": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "payeeRef": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$",
+            "example": "0xabababababababababababababababababababababababababababababababab"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "deadline": {
+            "type": "integer",
+            "format": "int64",
+            "description": "unix seconds"
+          },
+          "delivered": {
+            "type": "boolean"
+          },
+          "waybillHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$",
+            "example": "0xabababababababababababababababababababababababababababababababab"
+          },
+          "shippedAt": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Loan": {
+        "type": "object",
+        "properties": {
+          "loanId": {
+            "type": "string",
+            "example": "LN-2026-0001"
+          },
+          "sellerRef": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$",
+            "example": "0xabababababababababababababababababababababababababababababababab"
+          },
+          "tier": {
+            "type": "integer",
+            "format": "int64",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "principal": {
+            "type": "integer",
+            "format": "int64",
+            "description": "minor units (fen)"
+          },
+          "rateBps": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tenorDays": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sweepRateBps": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sweepCapBps": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "graceDays": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "decisionHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$",
+            "example": "0xabababababababababababababababababababababababababababababababab"
+          },
+          "humanReviewRequired": {
+            "type": "boolean"
+          },
+          "officerApproved": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pendingFunders": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "created",
+              "approved",
+              "active",
+              "settled",
+              "defaulted",
+              "cancelled",
+              "accelerated"
+            ]
+          },
+          "alertLevel": {
+            "type": "string",
+            "enum": [
+              "none",
+              "green",
+              "yellow",
+              "red"
+            ]
+          },
+          "disbursedAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "graceEndsAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "maturityAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lastAccrualAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "principalOutstanding": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "interestAccrued": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "overduePrincipal": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "overdueInterest": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalRepaid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "principalRepaid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "interestRepaid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "floorCumulative": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "refundDue": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "funding": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FundingView"
+            }
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Payment"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AnchorRecord": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "application",
+              "ml_output",
+              "agent_io",
+              "credit_memo",
+              "risk_challenge",
+              "human_decision",
+              "offer_contract",
+              "explanation",
+              "sweep_notice",
+              "decision_package",
+              "other"
+            ]
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$",
+            "example": "0xabababababababababababababababababababababababababababababababab"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "writer": {
+            "type": "string",
+            "example": "0x868dacf3fd9d4228e6da97ec27b17e6e128df91d"
+          },
+          "head": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$",
+            "example": "0xabababababababababababababababababababababababababababababababab",
+            "description": "hash-chain link"
+          },
+          "tx": {
+            "$ref": "#/components/schemas/Tx"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoanResponse": {
+        "type": "object",
+        "properties": {
+          "loan": {
+            "$ref": "#/components/schemas/Loan"
+          },
+          "tx": {
+            "$ref": "#/components/schemas/Tx"
+          }
+        },
+        "additionalProperties": true,
+        "description": "Transaction result plus the fresh loan snapshot. Some endpoints add fields such as allocation, shortfall, onTime or *Anchor."
+      },
+      "Payoff": {
+        "type": "object",
+        "properties": {
+          "principal": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "interest": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "asOf": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChainInfo": {
+        "type": "object",
+        "properties": {
+          "backend": {
+            "type": "string",
+            "enum": [
+              "fisco-bcos",
+              "mock"
+            ]
+          },
+          "blockNumber": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "chainTime": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contracts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "accounts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "policy": {
+            "type": "object",
+            "properties": {
+              "maxRateBps": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "officerThreshold": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "maxFutureSkewSec": {
+                "type": "integer",
+                "format": "int64"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"bouyup/fisco/internal/api"
+	"buoyup/fisco/internal/api"
 )
 
 // Every route the server registers must be documented, and the spec must not document routes that don't exist.

@@ -10,7 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"bouyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/ledger"
 )
 
 // The overview's step-by-step demo: a manual withdrawal sent from the page, timed stage by stage, plus when each

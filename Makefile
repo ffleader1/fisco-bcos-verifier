@@ -1,4 +1,4 @@
-# BouyUp FISCO BCOS component
+# BuoyUp FISCO BCOS component
 BIN ?= bin/sgchain
 FISCO_SDK_DIR ?= $(CURDIR)/chain/sdk
 

@@ -1,4 +1,4 @@
-module bouyup/fisco
+module buoyup/fisco
 
 go 1.22
 

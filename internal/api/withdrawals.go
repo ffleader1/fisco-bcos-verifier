@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"bouyup/fisco/internal/catalog"
-	"bouyup/fisco/internal/hashing"
-	"bouyup/fisco/internal/ledger"
-	"bouyup/fisco/internal/payout"
-	"bouyup/fisco/internal/sealing"
+	"buoyup/fisco/internal/catalog"
+	"buoyup/fisco/internal/hashing"
+	"buoyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/payout"
+	"buoyup/fisco/internal/sealing"
 )
 
 // ---------------------------------------------------------------- request
@@ -246,6 +246,7 @@ func (s *Server) validateActor(a *actorReq) error {
 func withdrawalID(requestID string) string {
 	var b []byte
 	if requestID != "" {
+		// Frozen identifier: keeps the old "BouyUp" spelling on purpose. Changing it would make a retried requestId map to a new withdrawal id.
 		h := sha256.Sum256([]byte("bouyup-withdrawal:" + requestID))
 		b = h[:8]
 	} else {
@@ -267,7 +268,7 @@ type actorInfo struct {
 	Hash     ledger.Hash      `json:"hash"`               // SHA-256 of the full actor object as sent
 }
 
-// summaryPiece is piece 0: readable by every bank of the withdrawal and by BouyUp.
+// summaryPiece is piece 0: readable by every bank of the withdrawal and by BuoyUp.
 type summaryPiece struct {
 	Type         string      `json:"type"` // "summary"
 	WithdrawalID string      `json:"withdrawalId"`
@@ -284,7 +285,7 @@ type summaryPiece struct {
 	Salt         string      `json:"salt"`
 }
 
-// bankPiece is one bank's share: readable by that bank and by BouyUp only.
+// bankPiece is one bank's share: readable by that bank and by BuoyUp only.
 type bankPiece struct {
 	Type         string  `json:"type"` // "bank_share"
 	WithdrawalID string  `json:"withdrawalId"`
@@ -324,8 +325,8 @@ func (s *Server) actorInfo(a *actorReq) (actorInfo, error) {
 	return out, nil
 }
 
-// sealWithdrawal builds and encrypts the pieces: the summary for every bank + BouyUp, each share for its bank +
-// BouyUp. Recipient 0 is the BouyUp master key.
+// sealWithdrawal builds and encrypts the pieces: the summary for every bank + BuoyUp, each share for its bank +
+// BuoyUp. Recipient 0 is the BuoyUp master key.
 func (s *Server) sealWithdrawal(id string, v *validated, sum summaryPiece) (sealing.Sealed, error) {
 	recipients := []string{s.Keys.MasterPublic()}
 	summaryReaders := []int{0}
@@ -388,7 +389,7 @@ type legView struct {
 	RatioBps      int64   `json:"ratioBps"`
 	Amount        int64   `json:"amount"`
 	ContractNo    string  `json:"contractNo,omitempty"`
-	Reimbursement string  `json:"reimbursement"` // pending: BouyUp still has to claim this share from the bank
+	Reimbursement string  `json:"reimbursement"` // pending: BuoyUp still has to claim this share from the bank
 }
 
 type chainView struct {
@@ -608,7 +609,7 @@ func (s *Server) lookupWithdrawal(ctx context.Context, key string) (ledger.Withd
 	return s.Ledger.GetWithdrawal(ctx, key)
 }
 
-// getWithdrawal returns the withdrawal decrypted with the BouyUp master key.
+// getWithdrawal returns the withdrawal decrypted with the BuoyUp master key.
 func (s *Server) getWithdrawal(w http.ResponseWriter, r *http.Request) {
 	wd, err := s.lookupWithdrawal(r.Context(), r.PathValue("id"))
 	if err != nil {
@@ -638,7 +639,7 @@ func pageArgs(r *http.Request, def, max int) (int, int) {
 	return offset, limit
 }
 
-// listWithdrawals: decrypted list (BouyUp view, token-protected).
+// listWithdrawals: decrypted list (BuoyUp view, token-protected).
 func (s *Server) listWithdrawals(w http.ResponseWriter, r *http.Request) {
 	offset, limit := pageArgs(r, 20, 100)
 	items, total, err := s.Ledger.ListWithdrawals(r.Context(), offset, limit)
@@ -675,7 +676,7 @@ type verifyResult struct {
 }
 
 // verify runs the public checks (anyone can repeat them from the chain) and, with withMaster, the checks that
-// need the BouyUp master key (decrypt every piece, match the commitments, re-check the 100% split).
+// need the BuoyUp master key (decrypt every piece, match the commitments, re-check the 100% split).
 func (s *Server) verify(ctx context.Context, wd ledger.Withdrawal, withMaster bool) verifyResult {
 	res := verifyResult{WithdrawalID: wd.ID, Root: wd.Root, Chain: s.chainOf(ctx, wd)}
 	add := func(name string, ok bool, detail string) { res.Checks = append(res.Checks, check{name, ok, detail}) }

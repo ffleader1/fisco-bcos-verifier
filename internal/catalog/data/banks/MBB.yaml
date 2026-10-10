@@ -1,4 +1,4 @@
-# Mock profile for the BouyUp demo. Not the real policy or terms of MB Bank.
+# Mock profile for the BuoyUp demo. Not the real policy or terms of MB Bank.
 code: MBB
 name: MB Bank
 localName: Ngân hàng TMCP Quân đội
@@ -102,7 +102,7 @@ policy:
 contract:
   contractNo: BU-MBB-2026-01
   title: Payment facilitation and reimbursement agreement
-  parties: [MB Bank, BouyUp]
+  parties: [MB Bank, BuoyUp]
   status: active
   effectiveFrom: "2026-01-15"
   expiresOn: "2027-01-14"

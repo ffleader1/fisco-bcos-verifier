@@ -1,4 +1,4 @@
-### BouyUp chain API — run from GoLand / IntelliJ HTTP client (or VS Code REST Client).
+### BuoyUp chain API — run from GoLand / IntelliJ HTTP client (or VS Code REST Client).
 ### Start the service with: go run ./cmd/sgchain serve -config configs/mock.json
 ### Amounts are in the currency's smallest unit: VND in đồng, CNY in fen (1 CNY = 100).
 @base = http://localhost:12080
@@ -23,7 +23,7 @@ GET {{base}}/v1/banks/VCB
 ### the policy Agent 3 reads
 GET {{base}}/v1/banks/AGRI/policy
 
-### the bank's contract with BouyUp
+### the bank's contract with BuoyUp
 GET {{base}}/v1/banks/WEBANK/contract
 
 ### ------------------------------------------------------------ withdrawals

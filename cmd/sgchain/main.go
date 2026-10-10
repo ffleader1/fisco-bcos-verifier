@@ -1,4 +1,4 @@
-// Command sgchain runs the BouyUp FISCO BCOS component.
+// Command sgchain runs the BuoyUp FISCO BCOS component.
 //
 //	sgchain keygen    -out keys -names admin,operator   # create role keys
 //	sgchain deploy    -config config.json               # deploy contracts + grant the operator its roles
@@ -22,15 +22,15 @@ import (
 	"syscall"
 	"time"
 
-	"bouyup/fisco/internal/api"
-	"bouyup/fisco/internal/catalog"
-	"bouyup/fisco/internal/config"
-	"bouyup/fisco/internal/keystore"
-	"bouyup/fisco/internal/ledger"
-	"bouyup/fisco/internal/ledger/fisco"
-	"bouyup/fisco/internal/ledger/mock"
-	"bouyup/fisco/internal/payout"
-	"bouyup/fisco/internal/sealing"
+	"buoyup/fisco/internal/api"
+	"buoyup/fisco/internal/catalog"
+	"buoyup/fisco/internal/config"
+	"buoyup/fisco/internal/keystore"
+	"buoyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/ledger/fisco"
+	"buoyup/fisco/internal/ledger/mock"
+	"buoyup/fisco/internal/payout"
+	"buoyup/fisco/internal/sealing"
 )
 
 func main() {
@@ -64,7 +64,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprint(os.Stderr, `sgchain — BouyUp FISCO BCOS component
+	fmt.Fprint(os.Stderr, `sgchain — BuoyUp FISCO BCOS component
 
 usage:
   sgchain keygen    -out <dir> [-names admin,operator]
@@ -127,7 +127,7 @@ func serve(args []string) error {
 	defer l.Close()
 	salt := cfg.RefSalt
 	if salt == "" {
-		salt = "bouyup-dev-salt-change-me"
+		salt = "bouyup-dev-salt-change-me" // frozen dev default (old spelling kept): changing it changes every account/staff reference
 		log.Warn("refSalt not set: using a development salt")
 	}
 	var codes []string
@@ -248,7 +248,7 @@ func keygen(args []string) error {
 // never leaves this machine.
 func decryptCmd(args []string) error {
 	fs := flag.NewFlagSet("decrypt", flag.ExitOnError)
-	server := fs.String("server", "http://localhost:12080", "BouyUp server")
+	server := fs.String("server", "http://localhost:12080", "BuoyUp server")
 	id := fs.String("id", "", "withdrawal id or transaction hash")
 	key := fs.String("key", "", "private key (hex)")
 	if err := fs.Parse(args); err != nil {

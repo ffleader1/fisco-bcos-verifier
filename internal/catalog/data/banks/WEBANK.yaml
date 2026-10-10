@@ -1,4 +1,4 @@
-# Mock profile for the BouyUp demo. Not the real policy or terms of WeBank.
+# Mock profile for the BuoyUp demo. Not the real policy or terms of WeBank.
 code: WEBANK
 name: WeBank
 localName: 深圳前海微众银行
@@ -7,7 +7,7 @@ headquarters: CN-GD
 type: Digital bank (online-only)
 active: true
 profile: >-
-  Online-only bank built for small businesses and individuals, and the operator of BouyUp's credit
+  Online-only bank built for small businesses and individuals, and the operator of BuoyUp's credit
   product. Lives on data: platform history, payment flows and federated risk scores. Comfortable with small,
   young merchants when the data is consistent.
 
@@ -113,7 +113,7 @@ policy:
 contract:
   contractNo: BU-WEBANK-2026-01
   title: Payment facilitation and reimbursement agreement
-  parties: [WeBank, BouyUp]
+  parties: [WeBank, BuoyUp]
   status: active
   effectiveFrom: "2026-01-01"
   expiresOn: "2028-12-31"

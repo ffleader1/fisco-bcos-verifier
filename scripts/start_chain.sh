@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start a local 4-node FISCO BCOS v2.11.1 chain (group 1, chain id 1) for BouyUp development.
+# Start a local 4-node FISCO BCOS v2.11.1 chain (group 1, chain id 1) for BuoyUp development.
 # Runs on Linux, macOS (Intel, via Docker mode) or Windows through WSL2 (Ubuntu). Requires curl, openssl.
 #
 #   ./scripts/start_chain.sh            # native binary (Linux / WSL2)

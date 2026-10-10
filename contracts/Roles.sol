@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.6.10;
 
-/// @title Roles — minimal bitmask role registry shared by BouyUp contracts.
+/// @title Roles — minimal bitmask role registry shared by BuoyUp contracts.
 /// @notice - ADMIN        : deploys the contracts and grants roles.
-///         - OPERATOR     : the BouyUp service key. Writes withdrawal records (WithdrawalLedger).
+///         - OPERATOR     : the BuoyUp service key. Writes withdrawal records (WithdrawalLedger).
 ///         - AUDIT_WRITER : may anchor hashes of agent / algorithm / human artefacts (AuditTrail).
 ///         Who actually triggered a withdrawal (Agent 4 or a human) is recorded in the withdrawal itself;
 ///         the chain only accepts writes signed by the service.

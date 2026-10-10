@@ -1,11 +1,11 @@
-# BouyUp — FISCO BCOS component (Go)
+# BuoyUp — FISCO BCOS component (Go)
 
-The blockchain service of BouyUp. It does these things:
+The blockchain service of BuoyUp. It does these things:
 
 | Feature | What it does | Who uses it |
 |---|---|---|
 | **Withdrawals** | Pays a user's account (mock treasury, unlimited funds) and writes the payout on chain **encrypted per bank**, with fingerprints that prove each share. Returns the transaction hash, block, sealing node and how many nodes hold it. | Agent 4, or a human for a manual payout |
-| **Bank catalog** | Regions (VN, CN) and provinces; 10 demo banks with numeric limits, a written credit policy and a contract with BouyUp. Stored as YAML. | Agent 3 reads the policies; Agent 4 picks the banks |
+| **Bank catalog** | Regions (VN, CN) and provinces; 10 demo banks with numeric limits, a written credit policy and a contract with BuoyUp. Stored as YAML. | Agent 3 reads the policies; Agent 4 picks the banks |
 | **Audit trail** | Anchors hashes of documents (applications, algorithm output, agent traces, decisions) in a per-subject hash chain. | Agents 1, 2, 3, 5 and the approval gate |
 | **Explorer** | Public read-only web page at `/explorer/`: blocks, transactions, node status, encrypted withdrawals, and a box to decrypt one with your own key. | Banks, auditors, the team |
 | **Overview** | **`/overview/`** — a friendly page for the team (open the server root, it redirects there): the design, who can read what, a 10-step animation of a withdrawal moving through the 4 nodes (with a demo form that replays your own withdrawal with real timings), a "test every key" bench, every secret with Show/Copy, and copy-paste decrypt commands. Same content as data at `GET /v1/overview` (`?format=markdown`): what this service does, its security design, **every secret** (demo keys), a step-by-step decryption guide with a worked example. | The team |
@@ -47,7 +47,7 @@ POST /v1/withdrawals
 - **Privacy:** the chain stores the withdrawal **encrypted** (next section). Inside it, `userId` + `accountNo` are a salted `accountRef`.
 - **Response:** the record plus `chain` = `txHash`, `blockNumber`, `blockHash`, `submittedTo`, `sealedBy`,
   `confirmedNodes / totalNodes`, per-node confirmations, `explorerUrl`, `verifyUrl`.
-- `GET /v1/withdrawals/{id|txHash}` reads it back from the chain and decrypts it with the BouyUp master key;
+- `GET /v1/withdrawals/{id|txHash}` reads it back from the chain and decrypts it with the BuoyUp master key;
   `.../verify` recomputes the Merkle root, decrypts every piece, matches the fingerprints, re-checks the 100%
   split and asks every node whether it holds the transaction.
 
@@ -57,14 +57,14 @@ The chain is shared by every member, so nothing readable goes on it:
 
 | Piece | Readable by |
 |---|---|
-| Summary: amount, currency, region, province, account ref, payout ref, actor, number of banks | every bank of that withdrawal + BouyUp |
-| Bank X's share: percent, amount, contract no. | bank X + BouyUp only |
+| Summary: amount, currency, region, province, account ref, payout ref, actor, number of banks | every bank of that withdrawal + BuoyUp |
+| Bank X's share: percent, amount, contract no. | bank X + BuoyUp only |
 
 - Each piece is encrypted with its own random key (AES-256-GCM). The piece keys are handed out in unnamed,
   shuffled **key slots**, one per reader, each locked with X25519 + HKDF-SHA256 to that reader's public key.
   A reader finds its slot by trying its key. Format: `internal/sealing/sealing.go`.
 - On chain: the envelope, a SHA-256 **commitment** of each piece's plaintext (salted) and their **Merkle root**,
-  which the contract recomputes. A bank proves its share to anyone by showing the piece; nobody (BouyUp included)
+  which the contract recomputes. A bank proves its share to anyone by showing the piece; nobody (BuoyUp included)
   can show different contents later.
 - Keys: `bankKeysFile` (default `keys/bank-keys.json`) is created with fresh **demo** key pairs for the master
   and every bank on first start. A bank changes its key with `PUT /v1/banks/{code}/public-key`; older
@@ -86,7 +86,7 @@ Unknown YAML fields are rejected at startup, so typos fail loudly.
 - CN: WeBank, ICBC, China Construction Bank (CCB), Bank of China (BOC), China Merchants Bank (CMB). Currency CNY.
 - Each bank has `limits` (numbers; not enforced by the withdrawal endpoint), `policy` (text for Agent 3:
   sector / province / customer preferences with reasons, red flags, when to escalate, deal breakers) and
-  `contract` (its mock agreement with BouyUp). Policy and contract carry a SHA-256 `hash`.
+  `contract` (its mock agreement with BuoyUp). Policy and contract carry a SHA-256 `hash`.
 - **All bank data is mock data for the demo**, not the real policy or terms of these banks.
 
 ## Quick start: mock, no chain (Windows / any OS)

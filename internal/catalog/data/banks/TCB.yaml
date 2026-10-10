@@ -1,4 +1,4 @@
-# Mock profile for the BouyUp demo. Not the real policy or terms of Techcombank.
+# Mock profile for the BuoyUp demo. Not the real policy or terms of Techcombank.
 code: TCB
 name: Techcombank
 localName: Ngân hàng TMCP Kỹ thương Việt Nam
@@ -122,7 +122,7 @@ policy:
 contract:
   contractNo: BU-TCB-2026-01
   title: Payment facilitation and reimbursement agreement
-  parties: [Techcombank, BouyUp]
+  parties: [Techcombank, BuoyUp]
   status: active
   effectiveFrom: "2026-01-01"
   expiresOn: "2027-06-30"
@@ -130,12 +130,12 @@ contract:
   reimbursementTerms: >-
     Techcombank reimburses its share within 2 business days after the withdrawal is recorded on chain,
     through an automated daily settlement file.
-  feeTerms: BouyUp charges 0.20% of Techcombank's share, netted in the daily settlement.
+  feeTerms: BuoyUp charges 0.20% of Techcombank's share, netted in the daily settlement.
   evidenceTerms: >-
     The FISCO BCOS withdrawal record is the evidence of payment. Techcombank runs its own observer node and
     reconciles against it every day.
   dataTerms: >-
-    Only salted references are shared on chain. Techcombank may ask BouyUp to resolve a reference for a
+    Only salted references are shared on chain. Techcombank may ask BuoyUp to resolve a reference for a
     specific withdrawal under its KYC obligations.
   governingLaw: Laws of Vietnam
   disputeResolution: Vietnam International Arbitration Centre (VIAC), TP. Hồ Chí Minh

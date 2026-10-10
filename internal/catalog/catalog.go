@@ -1,6 +1,6 @@
-// Package catalog holds the demo bank catalog: regions (countries and provinces), the banks BouyUp works
+// Package catalog holds the demo bank catalog: regions (countries and provinces), the banks BuoyUp works
 // with, each bank's numeric limits, its written credit policy (read by Agent 3) and its service agreement with
-// BouyUp. The data lives in YAML files: built into the binary from data/, or loaded from a folder
+// BuoyUp. The data lives in YAML files: built into the binary from data/, or loaded from a folder
 // (config "catalogDir") so the team can edit policies without rebuilding.
 //
 // Everything here is MOCK data for the demo. It is not the real policy, terms or limits of any bank.
@@ -19,8 +19,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"bouyup/fisco/internal/hashing"
-	"bouyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/hashing"
+	"buoyup/fisco/internal/ledger"
 )
 
 //go:embed data/regions.yaml data/banks/*.yaml
@@ -51,8 +51,8 @@ type Limits struct {
 	MaxWithdrawal        int64   `yaml:"maxWithdrawal" json:"maxWithdrawal"`
 	MaxSharePercent      float64 `yaml:"maxSharePercent" json:"maxSharePercent"` // max part of one withdrawal the bank takes
 	DailyCap             int64   `yaml:"dailyCap" json:"dailyCap"`
-	ReimbursementDays    int     `yaml:"reimbursementDays" json:"reimbursementDays"` // business days to pay BouyUp back
-	FeePercent           float64 `yaml:"feePercent" json:"feePercent"`               // BouyUp's fee on the bank's share
+	ReimbursementDays    int     `yaml:"reimbursementDays" json:"reimbursementDays"` // business days to pay BuoyUp back
+	FeePercent           float64 `yaml:"feePercent" json:"feePercent"`               // BuoyUp's fee on the bank's share
 	MaxLoanAmount        int64   `yaml:"maxLoanAmount" json:"maxLoanAmount"`
 	MinAnnualRatePercent float64 `yaml:"minAnnualRatePercent" json:"minAnnualRatePercent"`
 	MaxAnnualRatePercent float64 `yaml:"maxAnnualRatePercent" json:"maxAnnualRatePercent"`
@@ -94,7 +94,7 @@ type Policy struct {
 	Hash            ledger.Hash   `yaml:"-" json:"hash"` // SHA-256 of the canonical JSON of the policy (without this field)
 }
 
-// Contract is the (mock) service agreement between the bank and BouyUp.
+// Contract is the (mock) service agreement between the bank and BuoyUp.
 type Contract struct {
 	ContractNo         string      `yaml:"contractNo" json:"contractNo"`
 	Title              string      `yaml:"title" json:"title"`
@@ -102,7 +102,7 @@ type Contract struct {
 	Status             string      `yaml:"status" json:"status"` // active | suspended | expired
 	EffectiveFrom      string      `yaml:"effectiveFrom" json:"effectiveFrom"`
 	ExpiresOn          string      `yaml:"expiresOn" json:"expiresOn"`
-	CreditLine         int64       `yaml:"creditLine" json:"creditLine"` // max outstanding amount the bank owes BouyUp
+	CreditLine         int64       `yaml:"creditLine" json:"creditLine"` // max outstanding amount the bank owes BuoyUp
 	ReimbursementTerms string      `yaml:"reimbursementTerms" json:"reimbursementTerms"`
 	FeeTerms           string      `yaml:"feeTerms" json:"feeTerms"`
 	EvidenceTerms      string      `yaml:"evidenceTerms" json:"evidenceTerms"`
@@ -133,7 +133,7 @@ type Bank struct {
 }
 
 // Disclaimer is attached to every bank profile.
-const Disclaimer = "Demo data for BouyUp. Not the real policy, terms or limits of this bank."
+const Disclaimer = "Demo data for BuoyUp. Not the real policy, terms or limits of this bank."
 
 // Catalog is the loaded data.
 type Catalog struct {

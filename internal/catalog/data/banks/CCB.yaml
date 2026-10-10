@@ -1,4 +1,4 @@
-# Mock profile for the BouyUp demo. Not the real policy or terms of China Construction Bank.
+# Mock profile for the BuoyUp demo. Not the real policy or terms of China Construction Bank.
 code: CCB
 name: China Construction Bank
 localName: 中国建设银行
@@ -108,7 +108,7 @@ policy:
 contract:
   contractNo: BU-CCB-2026-01
   title: Payment facilitation and reimbursement agreement
-  parties: [China Construction Bank, BouyUp]
+  parties: [China Construction Bank, BuoyUp]
   status: active
   effectiveFrom: "2026-01-01"
   expiresOn: "2027-12-31"
@@ -121,4 +121,4 @@ contract:
   disputeResolution: China International Economic and Trade Arbitration Commission (CIETAC), Beijing
   termination: 30 days' notice.
   keyClauses:
-    - CCB may ask BouyUp for the order-level receivable data behind a withdrawal it funded.
+    - CCB may ask BuoyUp for the order-level receivable data behind a withdrawal it funded.

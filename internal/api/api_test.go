@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"bouyup/fisco/internal/api"
-	"bouyup/fisco/internal/catalog"
-	"bouyup/fisco/internal/keystore"
-	"bouyup/fisco/internal/ledger"
-	"bouyup/fisco/internal/ledger/mock"
-	"bouyup/fisco/internal/payout"
+	"buoyup/fisco/internal/api"
+	"buoyup/fisco/internal/catalog"
+	"buoyup/fisco/internal/keystore"
+	"buoyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/ledger/mock"
+	"buoyup/fisco/internal/payout"
 )
 
 var testNow = time.Date(2026, 10, 10, 9, 0, 0, 0, time.UTC)
@@ -355,8 +355,8 @@ func TestExplorerIsPublic(t *testing.T) {
 		}
 	}
 	pub.errKind("GET", "/explorer/api/search?q=nothing", nil, 404, "not_found")
-	for path, want := range map[string]string{"/explorer/": "BouyUp Chain Explorer", "/explorer/decrypt_withdrawal.py": "X25519PrivateKey",
-		"/overview/": "BouyUp Chain Overview"} {
+	for path, want := range map[string]string{"/explorer/": "BuoyUp Chain Explorer", "/explorer/decrypt_withdrawal.py": "X25519PrivateKey",
+		"/overview/": "BuoyUp Chain Overview"} {
 		resp, err := http.Get(ts.URL + path)
 		if err != nil {
 			t.Fatal(err)
@@ -436,7 +436,7 @@ func TestOverview(t *testing.T) {
 		t.Fatalf("overview: %v", o)
 	}
 	secrets := toJSON(o["secrets"])
-	if !strings.Contains(secrets, testKeys.MasterPrivate()) || !strings.Contains(secrets, "BouyUp master key") {
+	if !strings.Contains(secrets, testKeys.MasterPrivate()) || !strings.Contains(secrets, "BuoyUp master key") {
 		t.Fatal("the master key must be listed when showDemoKeys is on")
 	}
 	ex := o["decodeExample"].(map[string]any)
@@ -449,7 +449,7 @@ func TestOverview(t *testing.T) {
 	}
 	md, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
-	for _, want := range []string{"# BouyUp", "## Security", "## Secrets", "## How to decrypt", "X25519", "Merkle", "PBFT"} {
+	for _, want := range []string{"# BuoyUp", "## Security", "## Secrets", "## How to decrypt", "X25519", "Merkle", "PBFT"} {
 		if !strings.Contains(string(md), want) {
 			t.Fatalf("markdown overview misses %q", want)
 		}

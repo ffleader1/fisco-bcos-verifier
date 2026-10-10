@@ -3,11 +3,11 @@ pragma solidity ^0.6.10;
 
 import "./Roles.sol";
 
-/// @title WithdrawalLedger — tamper-proof, confidential record of every withdrawal BouyUp pays out.
-/// @notice BouyUp pays the target account first, then claims each bank's share back from that bank. A record
+/// @title WithdrawalLedger — tamper-proof, confidential record of every withdrawal BuoyUp pays out.
+/// @notice BuoyUp pays the target account first, then claims each bank's share back from that bank. A record
 ///         proves who funded what without showing it to everybody:
 ///         - `envelope`: the withdrawal encrypted in pieces (summary + one piece per bank). Each bank can decrypt
-///           only the summary and its own share; the BouyUp master key decrypts everything. The contract never
+///           only the summary and its own share; the BuoyUp master key decrypts everything. The contract never
 ///           reads it (see internal/sealing for the format).
 ///         - `commitments`: SHA-256 of each piece's plaintext (salted), so a decrypted piece can be proven
 ///           unchanged.

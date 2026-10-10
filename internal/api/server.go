@@ -1,4 +1,4 @@
-// Package api exposes the BouyUp blockchain component as a JSON REST API: encrypted withdrawals (Agent 4 or a
+// Package api exposes the BuoyUp blockchain component as a JSON REST API: encrypted withdrawals (Agent 4 or a
 // human), the demo bank catalog (regions, bank policies for Agent 3, bank contracts, encryption keys), the
 // audit trail used by the other agents, a public read-only explorer of the chain and an overview for the team.
 package api
@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"bouyup/fisco/internal/catalog"
-	"bouyup/fisco/internal/keystore"
-	"bouyup/fisco/internal/ledger"
-	"bouyup/fisco/internal/payout"
+	"buoyup/fisco/internal/catalog"
+	"buoyup/fisco/internal/keystore"
+	"buoyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/payout"
 )
 
 // Server holds the dependencies of the HTTP handlers.

@@ -15,9 +15,9 @@ import (
 	"strings"
 	"testing"
 
-	"bouyup/fisco/internal/ledger"
-	"bouyup/fisco/internal/ledger/fisco"
-	"bouyup/fisco/internal/ledger/ledgertest"
+	"buoyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/ledger/fisco"
+	"buoyup/fisco/internal/ledger/ledgertest"
 )
 
 func env(k, def string) string {

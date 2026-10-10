@@ -1,4 +1,4 @@
-# Mock profile for the BouyUp demo. Not the real policy or terms of ICBC.
+# Mock profile for the BuoyUp demo. Not the real policy or terms of ICBC.
 code: ICBC
 name: Industrial and Commercial Bank of China
 localName: 中国工商银行
@@ -108,7 +108,7 @@ policy:
 contract:
   contractNo: BU-ICBC-2026-01
   title: Payment facilitation and reimbursement agreement
-  parties: [Industrial and Commercial Bank of China, BouyUp]
+  parties: [Industrial and Commercial Bank of China, BuoyUp]
   status: active
   effectiveFrom: "2026-04-01"
   expiresOn: "2027-03-31"

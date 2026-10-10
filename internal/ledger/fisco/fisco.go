@@ -26,8 +26,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"bouyup/fisco/contracts"
-	"bouyup/fisco/internal/ledger"
+	"buoyup/fisco/contracts"
+	"buoyup/fisco/internal/ledger"
 )
 
 // NodeConfig describes how to reach the chain over the channel port.

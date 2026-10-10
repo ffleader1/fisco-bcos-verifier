@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "BouyUp Chain API — withdrawals, banks, audit trail, explorer",
+    "title": "BuoyUp Chain API — withdrawals, banks, audit trail, explorer",
     "version": "2.0.0",
-    "description": "BouyUp's blockchain service on **FISCO BCOS**. It does four things:\n\n| Section | What it is for | Who calls it |\n|---|---|---|\n| **Withdrawals** | Pay money to a user's account and record the payout on chain, **encrypted**, with the bank split | Agent 4, or a human for a manual payout |\n| **Banks & regions** | The demo bank catalog: regions and provinces, each bank's limits, its written credit policy and its contract with BouyUp | Agent 3 (policies), Agent 4 (which banks to split across) |\n| **Audit trail** | Anchor hashes of documents (applications, algorithm output, agent traces, decisions) and check them later | Agents 1, 2, 3, 5 and the approval gate |\n| **Explorer** | Public, read-only view of the chain: blocks, transactions, encrypted withdrawals, node status, decryption with your own key. Page at `/explorer/` | Anyone (banks, auditors) |\n| **Overview** | `GET /v1/overview`: what this service does, its security design, every secret (demo keys), a step-by-step decryption guide | The team |\n\n### How a withdrawal works\n1. Agent 4 (or a person) sends the user, the account, the amount, the region and province, and the **bank split** (which banks fund it, in percent).\n2. The service checks the split: **at most 2 decimals per bank, total exactly 100.00%**, every bank exists, is active and belongs to the region.\n3. BouyUp pays the account straight away (mock treasury: unlimited funds).\n4. The withdrawal is **encrypted in pieces**: a summary (readable by every bank of the withdrawal and BouyUp) and one piece per bank (readable by that bank and BouyUp only). X25519 + HKDF-SHA256 + AES-256-GCM.\n5. The encrypted envelope, a SHA-256 fingerprint (commitment) of each piece and their Merkle root are written to the `WithdrawalLedger` contract, which recomputes the root. Nothing readable is on chain.\n6. The response (to the caller only) carries the readable record plus the **transaction hash, block, block hash, the node that sealed it and how many nodes already hold it**.\n7. Each bank reads its own share from the chain with its private key (`POST /explorer/api/decrypt`, or the standalone `/explorer/decrypt_withdrawal.py`) and can prove it to anyone with the fingerprint. Its share stays `pending` until BouyUp claims it (outside this service).\n\n### Conventions\n- **Amounts** are integers in the currency's smallest unit: **VND in đồng** (no decimals), **CNY in fen** (1 CNY = 100). Region `VN` pays in VND, `CN` in CNY.\n- **Percent** values in `bankSplit` may have up to 2 decimals (`60`, `25.5`, `33.33`). On chain they are stored as basis points (`ratioBps`, 100.00% = 10000).\n- **Privacy:** the chain holds only encrypted withdrawals. Inside them, `userId` + `accountNo` become a salted `accountRef` and a human's `staffId` a salted `staffRef`. `GET /v1/withdrawals/*` decrypts with the BouyUp master key (token-protected); the public explorer shows only ciphertext.\n- **Auth:** `/v1/*` needs `Authorization: Bearer <token>` when the server sets `apiToken`. `/healthz`, `/docs/` and `/explorer/` are public.\n- **Errors** always look like `{\"error\": {\"kind\": \"...\", \"message\": \"...\", \"details\": {...}}}`. `kind` is stable; branch on it, not on the message.\n\n| kind | HTTP | When |\n|---|---|---|\n| `invalid` | 400 | Malformed JSON, unknown field, missing userId/accountNo |\n| `invalid_amount` | 400 | Amount missing, zero or negative |\n| `invalid_bank_ratio` | 400 | Split does not total 100.00%, a ratio has more than 2 decimals, is 0, negative or above 100 |\n| `unknown_bank` | 400 / 404 | Bank code not in the catalog |\n| `bank_region_mismatch` | 400 | Bank belongs to another region (e.g. VCB in a CN withdrawal) |\n| `bank_unavailable` | 400 | Bank inactive or its contract with BouyUp is not active |\n| `unknown_region` / `unknown_province` / `currency_mismatch` | 400 | Region or province not in the catalog, or currency does not match the region |\n| `amount_too_small` | 400 | A bank's share would round to 0 |\n| `invalid_actor` | 400 | Actor missing or incomplete |\n| `actor_not_allowed` | 403 | An agent other than Agent 4 asked for a withdrawal |\n| `duplicate_request` | 409 | `requestId` reused for a different withdrawal |\n| `duplicate` | 409 | Audit anchor already exists for this subject |\n| `no_access` | 403 | Decrypt: the key opens no slot of that withdrawal |\n| `invalid_key` | 400 | A key is not 32 bytes of hex |\n| `not_found` | 404 | Withdrawal, transaction, block or anchor not found |\n| `payout_failed` / `chain` | 502 | Paying system or chain node error |\n| `unauthenticated` | 401 | Missing or wrong bearer token |\n\nAll bank data (policies, contracts, limits) is **mock data for the demo**, not the real terms of any bank."
+    "description": "BuoyUp's blockchain service on **FISCO BCOS**. It does four things:\n\n| Section | What it is for | Who calls it |\n|---|---|---|\n| **Withdrawals** | Pay money to a user's account and record the payout on chain, **encrypted**, with the bank split | Agent 4, or a human for a manual payout |\n| **Banks & regions** | The demo bank catalog: regions and provinces, each bank's limits, its written credit policy and its contract with BuoyUp | Agent 3 (policies), Agent 4 (which banks to split across) |\n| **Audit trail** | Anchor hashes of documents (applications, algorithm output, agent traces, decisions) and check them later | Agents 1, 2, 3, 5 and the approval gate |\n| **Explorer** | Public, read-only view of the chain: blocks, transactions, encrypted withdrawals, node status, decryption with your own key. Page at `/explorer/` | Anyone (banks, auditors) |\n| **Overview** | `GET /v1/overview`: what this service does, its security design, every secret (demo keys), a step-by-step decryption guide | The team |\n\n### How a withdrawal works\n1. Agent 4 (or a person) sends the user, the account, the amount, the region and province, and the **bank split** (which banks fund it, in percent).\n2. The service checks the split: **at most 2 decimals per bank, total exactly 100.00%**, every bank exists, is active and belongs to the region.\n3. BuoyUp pays the account straight away (mock treasury: unlimited funds).\n4. The withdrawal is **encrypted in pieces**: a summary (readable by every bank of the withdrawal and BuoyUp) and one piece per bank (readable by that bank and BuoyUp only). X25519 + HKDF-SHA256 + AES-256-GCM.\n5. The encrypted envelope, a SHA-256 fingerprint (commitment) of each piece and their Merkle root are written to the `WithdrawalLedger` contract, which recomputes the root. Nothing readable is on chain.\n6. The response (to the caller only) carries the readable record plus the **transaction hash, block, block hash, the node that sealed it and how many nodes already hold it**.\n7. Each bank reads its own share from the chain with its private key (`POST /explorer/api/decrypt`, or the standalone `/explorer/decrypt_withdrawal.py`) and can prove it to anyone with the fingerprint. Its share stays `pending` until BuoyUp claims it (outside this service).\n\n### Conventions\n- **Amounts** are integers in the currency's smallest unit: **VND in đồng** (no decimals), **CNY in fen** (1 CNY = 100). Region `VN` pays in VND, `CN` in CNY.\n- **Percent** values in `bankSplit` may have up to 2 decimals (`60`, `25.5`, `33.33`). On chain they are stored as basis points (`ratioBps`, 100.00% = 10000).\n- **Privacy:** the chain holds only encrypted withdrawals. Inside them, `userId` + `accountNo` become a salted `accountRef` and a human's `staffId` a salted `staffRef`. `GET /v1/withdrawals/*` decrypts with the BuoyUp master key (token-protected); the public explorer shows only ciphertext.\n- **Auth:** `/v1/*` needs `Authorization: Bearer <token>` when the server sets `apiToken`. `/healthz`, `/docs/` and `/explorer/` are public.\n- **Errors** always look like `{\"error\": {\"kind\": \"...\", \"message\": \"...\", \"details\": {...}}}`. `kind` is stable; branch on it, not on the message.\n\n| kind | HTTP | When |\n|---|---|---|\n| `invalid` | 400 | Malformed JSON, unknown field, missing userId/accountNo |\n| `invalid_amount` | 400 | Amount missing, zero or negative |\n| `invalid_bank_ratio` | 400 | Split does not total 100.00%, a ratio has more than 2 decimals, is 0, negative or above 100 |\n| `unknown_bank` | 400 / 404 | Bank code not in the catalog |\n| `bank_region_mismatch` | 400 | Bank belongs to another region (e.g. VCB in a CN withdrawal) |\n| `bank_unavailable` | 400 | Bank inactive or its contract with BuoyUp is not active |\n| `unknown_region` / `unknown_province` / `currency_mismatch` | 400 | Region or province not in the catalog, or currency does not match the region |\n| `amount_too_small` | 400 | A bank's share would round to 0 |\n| `invalid_actor` | 400 | Actor missing or incomplete |\n| `actor_not_allowed` | 403 | An agent other than Agent 4 asked for a withdrawal |\n| `duplicate_request` | 409 | `requestId` reused for a different withdrawal |\n| `duplicate` | 409 | Audit anchor already exists for this subject |\n| `no_access` | 403 | Decrypt: the key opens no slot of that withdrawal |\n| `invalid_key` | 400 | A key is not 32 bytes of hex |\n| `not_found` | 404 | Withdrawal, transaction, block or anchor not found |\n| `payout_failed` / `chain` | 502 | Paying system or chain node error |\n| `unauthenticated` | 401 | Missing or wrong bearer token |\n\nAll bank data (policies, contracts, limits) is **mock data for the demo**, not the real terms of any bank."
   },
   "servers": [
     {
@@ -19,7 +19,7 @@
   "tags": [
     {
       "name": "Withdrawals",
-      "description": "Pay a user's account and record the payout on FISCO BCOS, encrypted per bank. Called by **Agent 4** (or a human for a manual payout). These endpoints return the readable record (decrypted with the BouyUp master key)."
+      "description": "Pay a user's account and record the payout on FISCO BCOS, encrypted per bank. Called by **Agent 4** (or a human for a manual payout). These endpoints return the readable record (decrypted with the BuoyUp master key)."
     },
     {
       "name": "Banks & regions",
@@ -558,7 +558,7 @@
         ],
         "operationId": "verifyWithdrawal",
         "summary": "Check a withdrawal against the chain",
-        "description": "Recomputes the Merkle root from the on-chain commitments, checks the transaction, then decrypts every piece with the BouyUp master key, matches each against its commitment and re-checks that the bank ratios total 100.00% and the bank amounts total the amount. Asks every node whether it holds the transaction (reported; does not change `valid`).",
+        "description": "Recomputes the Merkle root from the on-chain commitments, checks the transaction, then decrypts every piece with the BuoyUp master key, matches each against its commitment and re-checks that the bank ratios total 100.00% and the bank amounts total the amount. Asks every node whether it holds the transaction (reported; does not change `valid`).",
         "parameters": [
           {
             "name": "id",
@@ -1068,7 +1068,7 @@
                       "mock": true
                     }
                   ],
-                  "disclaimer": "Demo data for BouyUp. Not the real policy, terms or limits of this bank."
+                  "disclaimer": "Demo data for BuoyUp. Not the real policy, terms or limits of this bank."
                 }
               }
             }
@@ -1133,7 +1133,7 @@
                   "type": "State-owned commercial bank",
                   "active": true,
                   "mock": true,
-                  "disclaimer": "Demo data for BouyUp. Not the real policy, terms or limits of this bank.",
+                  "disclaimer": "Demo data for BuoyUp. Not the real policy, terms or limits of this bank.",
                   "profile": "Large state-owned bank with the strongest foreign-exchange and trade-finance franchise in Vietnam. Conservative, documentation-heavy, cares a lot about reputation. Funds a share of a withdrawal when it is confident the seller is stable and will still be in business next year.",
                   "limits": {
                     "minWithdrawal": 5000000,
@@ -1323,23 +1323,23 @@
                     "title": "Payment facilitation and reimbursement agreement",
                     "parties": [
                       "Vietcombank",
-                      "BouyUp"
+                      "BuoyUp"
                     ],
                     "status": "active",
                     "effectiveFrom": "2026-01-01",
                     "expiresOn": "2027-12-31",
                     "creditLine": 100000000000,
-                    "reimbursementTerms": "BouyUp pays the target account first. Vietcombank reimburses its share of each withdrawal within 3 business days after the withdrawal is recorded on the BouyUp FISCO BCOS chain.",
-                    "feeTerms": "BouyUp charges 0.15% of Vietcombank's share, deducted when the bank reimburses.",
-                    "evidenceTerms": "The on-chain withdrawal record (transaction hash, record hash and bank share) is accepted by both parties as evidence that BouyUp paid. Either party can check it on any consortium node.",
-                    "dataTerms": "No personal data is written on chain. Account numbers and user ids appear only as salted references that BouyUp can match on request. Processing follows Vietnam's personal data protection rules.",
+                    "reimbursementTerms": "BuoyUp pays the target account first. Vietcombank reimburses its share of each withdrawal within 3 business days after the withdrawal is recorded on the BuoyUp FISCO BCOS chain.",
+                    "feeTerms": "BuoyUp charges 0.15% of Vietcombank's share, deducted when the bank reimburses.",
+                    "evidenceTerms": "The on-chain withdrawal record (transaction hash, record hash and bank share) is accepted by both parties as evidence that BuoyUp paid. Either party can check it on any consortium node.",
+                    "dataTerms": "No personal data is written on chain. Account numbers and user ids appear only as salted references that BuoyUp can match on request. Processing follows Vietnam's personal data protection rules.",
                     "governingLaw": "Laws of Vietnam",
                     "disputeResolution": "Vietnam International Arbitration Centre (VIAC), Hà Nội",
                     "termination": "Either party may stop new withdrawals with 5 business days' written notice; shares already paid out remain due.",
                     "keyClauses": [
-                      "Vietcombank's outstanding reimbursements to BouyUp may not exceed the credit line.",
+                      "Vietcombank's outstanding reimbursements to BuoyUp may not exceed the credit line.",
                       "Vietcombank may refuse to take a share of a future withdrawal but may not refuse one already recorded on chain.",
-                      "BouyUp keeps the full withdrawal request for 10 years for audit."
+                      "BuoyUp keeps the full withdrawal request for 10 years for audit."
                     ],
                     "hash": "0x643dfee52d6b79311853e6d01dc7183a6d0190ce76526e63ffe7f77ac07a4851"
                   },
@@ -1425,7 +1425,7 @@
                 },
                 "example": {
                   "bank": "AGRI",
-                  "disclaimer": "Demo data for BouyUp. Not the real policy, terms or limits of this bank.",
+                  "disclaimer": "Demo data for BuoyUp. Not the real policy, terms or limits of this bank.",
                   "mock": true,
                   "name": "Agribank",
                   "policy": {
@@ -1599,7 +1599,7 @@
           "Banks & regions"
         ],
         "operationId": "getBankContract",
-        "summary": "The bank's service agreement with BouyUp",
+        "summary": "The bank's service agreement with BuoyUp",
         "parameters": [
           {
             "name": "code",
@@ -1649,7 +1649,7 @@
                     "title": "Payment facilitation and reimbursement agreement",
                     "parties": [
                       "WeBank",
-                      "BouyUp"
+                      "BuoyUp"
                     ],
                     "status": "active",
                     "effectiveFrom": "2026-01-01",
@@ -1669,7 +1669,7 @@
                     "hash": "0x82ce01718083bec1f97572c30e18c44d700f5e6a3d9f813bcf090ec4c3752bd0"
                   },
                   "contractStatus": "active",
-                  "disclaimer": "Demo data for BouyUp. Not the real policy, terms or limits of this bank.",
+                  "disclaimer": "Demo data for BuoyUp. Not the real policy, terms or limits of this bank.",
                   "mock": true,
                   "name": "WeBank",
                   "region": "CN"
@@ -2588,7 +2588,7 @@
         ],
         "operationId": "decrypt",
         "summary": "Decrypt a withdrawal with your own private key",
-        "description": "Returns the pieces your key can read, each with `commitmentMatches` (SHA-256 of the plaintext equals the on-chain commitment). A bank key reads the summary and its own share; the BouyUp master key reads everything; any other key gets 403 `no_access`. The server does not store the key. To decrypt without trusting the server, use `/explorer/decrypt_withdrawal.py` or `sgchain decrypt`.",
+        "description": "Returns the pieces your key can read, each with `commitmentMatches` (SHA-256 of the plaintext equals the on-chain commitment). A bank key reads the summary and its own share; the BuoyUp master key reads everything; any other key gets 403 `no_access`. The server does not store the key. To decrypt without trusting the server, use `/explorer/decrypt_withdrawal.py` or `sgchain decrypt`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2832,7 +2832,7 @@
         ],
         "operationId": "overview",
         "summary": "What this service does, its security design, every secret, how to decrypt",
-        "description": "For the team. Sections (Markdown inside JSON): what this part of BouyUp does, how a withdrawal works, security (FISCO BCOS consortium chain, envelope encryption, commitments + Merkle root, salted references, audit hash chain, keys), **Secrets** (master key, every bank key, chain signing keys, reference salt — full values only while `showDemoKeys` is on, which is the default), a step-by-step decryption guide and a worked example from the latest withdrawal. `?format=markdown` returns the same as one Markdown document.",
+        "description": "For the team. Sections (Markdown inside JSON): what this part of BuoyUp does, how a withdrawal works, security (FISCO BCOS consortium chain, envelope encryption, commitments + Merkle root, salted references, audit hash chain, keys), **Secrets** (master key, every bank key, chain signing keys, reference salt — full values only while `showDemoKeys` is on, which is the default), a step-by-step decryption guide and a worked example from the latest withdrawal. `?format=markdown` returns the same as one Markdown document.",
         "parameters": [
           {
             "name": "format",
@@ -2920,12 +2920,12 @@
                   }
                 },
                 "example": {
-                  "title": "BouyUp — chain service overview",
+                  "title": "BuoyUp — chain service overview",
                   "demoKeysShown": true,
                   "sections": [
                     {
                       "id": "what",
-                      "title": "What this part of BouyUp does",
+                      "title": "What this part of BuoyUp does",
                       "markdown": "…"
                     },
                     {
@@ -2956,8 +2956,8 @@
                   ],
                   "secrets": [
                     {
-                      "name": "BouyUp master key",
-                      "owner": "BouyUp",
+                      "name": "BuoyUp master key",
+                      "owner": "BuoyUp",
                       "unlocks": "EVERY piece of EVERY withdrawal (the master key gets a slot in all of them)",
                       "heldBy": "demo: bank-keys.json · production: an HSM/KMS, never on a server disk",
                       "publicKey": "<64 hex characters>",
@@ -2969,7 +2969,7 @@
                       "name": "AGRI encryption key",
                       "owner": "Agribank",
                       "unlocks": "the summary and AGRI's own share of withdrawals it funds — nothing about other banks",
-                      "heldBy": "demo: bank-keys.json · production: the bank itself (BouyUp only knows the public key)",
+                      "heldBy": "demo: bank-keys.json · production: the bank itself (BuoyUp only knows the public key)",
                       "publicKey": "<64 hex characters>",
                       "privateKey": "<64 hex characters>",
                       "activeFrom": "2026-10-10T20:42:44Z",
@@ -3432,7 +3432,7 @@
             "enum": [
               "pending"
             ],
-            "description": "BouyUp still has to claim this share from the bank (outside this service)."
+            "description": "BuoyUp still has to claim this share from the bank (outside this service)."
           }
         }
       },
@@ -3635,7 +3635,7 @@
             "$ref": "#/components/schemas/ChainRef"
           }
         },
-        "description": "Readable record (decrypted with the BouyUp master key). The chain itself holds only `onChain`."
+        "description": "Readable record (decrypted with the BuoyUp master key). The chain itself holds only `onChain`."
       },
       "OnChain": {
         "type": "object",
@@ -3664,7 +3664,7 @@
           },
           "slots": {
             "type": "integer",
-            "description": "Key slots, unnamed and shuffled: one per reader (BouyUp master + each bank)."
+            "description": "Key slots, unnamed and shuffled: one per reader (BuoyUp master + each bank)."
           },
           "envelopeBytes": {
             "type": "integer"
@@ -4067,7 +4067,7 @@
       },
       "Contract": {
         "type": "object",
-        "description": "Mock service agreement between the bank and BouyUp.",
+        "description": "Mock service agreement between the bank and BuoyUp.",
         "properties": {
           "contractNo": {
             "type": "string"

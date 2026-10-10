@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"bouyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/ledger"
 )
 
 // commitLog remembers when each node told us it had written a block. Every node pushes a block-number notice to

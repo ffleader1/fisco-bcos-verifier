@@ -5,7 +5,7 @@
 // then one piece per bank (that bank's percent and amount). Each piece is encrypted with its own random
 // 256-bit key (AES-256-GCM). The piece keys are then handed out in "slots": one slot per reader, encrypted
 // with a key only that reader can derive (X25519 key agreement + HKDF-SHA256). A bank's slot holds the keys of
-// the summary and of its own piece; the BouyUp master slot holds every key. Slots carry no names and are
+// the summary and of its own piece; the BuoyUp master slot holds every key. Slots carry no names and are
 // shuffled: a reader finds its slot by trying its key (AES-GCM fails cleanly on the wrong one).
 //
 // Commitments: SHA-256 of each piece's exact plaintext bytes (each plaintext carries a random salt, so a
@@ -42,7 +42,7 @@ import (
 	"strconv"
 	"strings"
 
-	"bouyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/ledger"
 )
 
 // Algorithm names the scheme recorded in every envelope.
@@ -169,6 +169,7 @@ func open(key []byte, b Box, aad []byte) ([]byte, error) {
 	return a.Open(nil, nonce, ct, aad)
 }
 
+// info is the HKDF info label. Frozen identifier: keeps the old "BouyUp" spelling on purpose. Changing it would make every withdrawal already on the chain unreadable.
 func info(id string) []byte    { return []byte("BouyUp withdrawal v1 " + id) }
 func slotAAD(id string) []byte { return []byte(id + "|slot") }
 func pieceAAD(id string, i int) []byte {

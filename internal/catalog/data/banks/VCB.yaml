@@ -1,4 +1,4 @@
-# Mock profile for the BouyUp demo. Not the real policy or terms of Vietcombank.
+# Mock profile for the BuoyUp demo. Not the real policy or terms of Vietcombank.
 code: VCB
 name: Vietcombank
 localName: Ngân hàng TMCP Ngoại thương Việt Nam
@@ -139,25 +139,25 @@ policy:
 contract:
   contractNo: BU-VCB-2026-01
   title: Payment facilitation and reimbursement agreement
-  parties: [Vietcombank, BouyUp]
+  parties: [Vietcombank, BuoyUp]
   status: active
   effectiveFrom: "2026-01-01"
   expiresOn: "2027-12-31"
   creditLine: 100000000000
   reimbursementTerms: >-
-    BouyUp pays the target account first. Vietcombank reimburses its share of each withdrawal within
-    3 business days after the withdrawal is recorded on the BouyUp FISCO BCOS chain.
-  feeTerms: BouyUp charges 0.15% of Vietcombank's share, deducted when the bank reimburses.
+    BuoyUp pays the target account first. Vietcombank reimburses its share of each withdrawal within
+    3 business days after the withdrawal is recorded on the BuoyUp FISCO BCOS chain.
+  feeTerms: BuoyUp charges 0.15% of Vietcombank's share, deducted when the bank reimburses.
   evidenceTerms: >-
     The on-chain withdrawal record (transaction hash, record hash and bank share) is accepted by both parties as
-    evidence that BouyUp paid. Either party can check it on any consortium node.
+    evidence that BuoyUp paid. Either party can check it on any consortium node.
   dataTerms: >-
     No personal data is written on chain. Account numbers and user ids appear only as salted references that
-    BouyUp can match on request. Processing follows Vietnam's personal data protection rules.
+    BuoyUp can match on request. Processing follows Vietnam's personal data protection rules.
   governingLaw: Laws of Vietnam
   disputeResolution: Vietnam International Arbitration Centre (VIAC), Hà Nội
   termination: Either party may stop new withdrawals with 5 business days' written notice; shares already paid out remain due.
   keyClauses:
-    - Vietcombank's outstanding reimbursements to BouyUp may not exceed the credit line.
+    - Vietcombank's outstanding reimbursements to BuoyUp may not exceed the credit line.
     - Vietcombank may refuse to take a share of a future withdrawal but may not refuse one already recorded on chain.
-    - BouyUp keeps the full withdrawal request for 10 years for audit.
+    - BuoyUp keeps the full withdrawal request for 10 years for audit.

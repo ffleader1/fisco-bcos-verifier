@@ -9,7 +9,7 @@ import (
 	"github.com/FISCO-BCOS/go-sdk/core/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	"bouyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/ledger"
 )
 
 // decodeLog decodes a receipt log emitted by one of the contracts into a ledger.Event with JSON-friendly values,

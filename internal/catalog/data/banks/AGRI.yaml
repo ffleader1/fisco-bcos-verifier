@@ -1,4 +1,4 @@
-# Mock profile for the BouyUp demo. Not the real policy or terms of Agribank.
+# Mock profile for the BuoyUp demo. Not the real policy or terms of Agribank.
 code: AGRI
 name: Agribank
 localName: Ngân hàng Nông nghiệp và Phát triển Nông thôn Việt Nam
@@ -117,7 +117,7 @@ policy:
 contract:
   contractNo: BU-AGRI-2026-01
   title: Payment facilitation and reimbursement agreement
-  parties: [Agribank, BouyUp]
+  parties: [Agribank, BuoyUp]
   status: active
   effectiveFrom: "2026-03-01"
   expiresOn: "2027-12-31"
@@ -131,4 +131,4 @@ contract:
   termination: 20 business days' notice.
   keyClauses:
     - Agribank reports quarterly to its rural programme on the number of agricultural sellers funded.
-    - Withdrawals for fresh produce must name the logistics partner in the withdrawal memo kept by BouyUp.
+    - Withdrawals for fresh produce must name the logistics partner in the withdrawal memo kept by BuoyUp.

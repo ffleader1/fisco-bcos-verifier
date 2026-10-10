@@ -8,9 +8,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"bouyup/fisco/internal/hashing"
-	"bouyup/fisco/internal/ledger"
-	"bouyup/fisco/internal/sealing"
+	"buoyup/fisco/internal/hashing"
+	"buoyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/sealing"
 )
 
 // Env is one ledger under test (already bootstrapped).

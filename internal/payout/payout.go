@@ -1,8 +1,8 @@
-// Package payout moves money to the target account of a withdrawal. BouyUp pays first from its own funds
+// Package payout moves money to the target account of a withdrawal. BuoyUp pays first from its own funds
 // and claims each bank's share back later (outside this service).
 //
-// Only a mock is implemented: it always succeeds, as if BouyUp had unlimited funds. A real implementation
-// would call BouyUp's paying bank and return that bank's transfer reference.
+// Only a mock is implemented: it always succeeds, as if BuoyUp had unlimited funds. A real implementation
+// would call BuoyUp's paying bank and return that bank's transfer reference.
 package payout
 
 import (

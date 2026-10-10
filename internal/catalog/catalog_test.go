@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"bouyup/fisco/internal/catalog"
+	"buoyup/fisco/internal/catalog"
 )
 
 func TestBuiltinCatalog(t *testing.T) {

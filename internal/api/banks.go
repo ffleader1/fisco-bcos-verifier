@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"bouyup/fisco/internal/catalog"
+	"buoyup/fisco/internal/catalog"
 )
 
 type bankSummary struct {

@@ -1,4 +1,4 @@
-# Mock profile for the BouyUp demo. Not the real policy or terms of China Merchants Bank.
+# Mock profile for the BuoyUp demo. Not the real policy or terms of China Merchants Bank.
 code: CMB
 name: China Merchants Bank
 localName: 招商银行
@@ -107,7 +107,7 @@ policy:
 contract:
   contractNo: BU-CMB-2026-01
   title: Payment facilitation and reimbursement agreement
-  parties: [China Merchants Bank, BouyUp]
+  parties: [China Merchants Bank, BuoyUp]
   status: active
   effectiveFrom: "2026-02-01"
   expiresOn: "2027-07-31"

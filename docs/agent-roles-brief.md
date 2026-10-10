@@ -1,4 +1,4 @@
-# BouyUp — Vai trò các AI agent
+# BuoyUp — Vai trò các AI agent
 
 ## Tóm tắt nhanh
 

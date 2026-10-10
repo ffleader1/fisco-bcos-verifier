@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# End-to-end walk-through of the BouyUp chain API (works against the mock or a real chain).
+# End-to-end walk-through of the BuoyUp chain API (works against the mock or a real chain).
 #   ./scripts/demo.sh [base-url]        default http://localhost:12080 ; set SG_API_TOKEN if the server uses one
 set -euo pipefail
 BASE="${1:-http://localhost:12080}"
@@ -47,7 +47,7 @@ OVERVIEW=$(curl -sS "${AUTH[@]}" "$BASE/v1/overview")
 key_of() { printf '%s' "$OVERVIEW" | python3 -c "import json,sys;d=json.load(sys.stdin);print(next(s['privateKey'] for s in d['secrets'] if s['name']==sys.argv[1]))" "$1"; }
 call POST /explorer/api/decrypt '{ "withdrawalId": "'"$ID"'", "privateKey": "'"$(key_of 'WEBANK encryption key')"'" }'
 call POST /explorer/api/decrypt '{ "withdrawalId": "'"$ID"'", "privateKey": "'"$(key_of 'VCB encryption key')"'" }'
-call POST /explorer/api/decrypt '{ "withdrawalId": "'"$ID"'", "privateKey": "'"$(key_of 'BouyUp master key')"'" }'
+call POST /explorer/api/decrypt '{ "withdrawalId": "'"$ID"'", "privateKey": "'"$(key_of 'BuoyUp master key')"'" }'
 
 # Another agent anchors the hash of its output in the audit trail.
 call POST /v1/audit/anchors '{ "subject": "APP-DEMO-'"$RUN"'", "kind": "algorithm_output",

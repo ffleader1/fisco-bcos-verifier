@@ -3,7 +3,7 @@ package api_test
 import (
 	"testing"
 
-	"bouyup/fisco/internal/api"
+	"buoyup/fisco/internal/api"
 )
 
 func demoBody(amount int64) map[string]any {

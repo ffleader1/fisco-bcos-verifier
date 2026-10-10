@@ -1,4 +1,4 @@
-// Package contracts embeds the compiled BouyUp Solidity contracts (solc 0.6.10, optimizer 200 runs,
+// Package contracts embeds the compiled BuoyUp Solidity contracts (solc 0.6.10, optimizer 200 runs,
 // evmVersion constantinople). Rebuild with `make contracts` after editing the .sol files.
 package contracts
 

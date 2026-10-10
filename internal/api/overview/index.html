@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BouyUp Chain Overview</title>
+<title>BuoyUp Chain Overview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -225,7 +225,7 @@ pre.code{background:var(--ink);color:var(--sheet);padding:14px 16px;border-radiu
 <body>
 <div class="shell">
 <nav class="index" aria-label="Sections">
-  <a class="brand" href="#top">BouyUp <span>chain</span></a>
+  <a class="brand" href="#top">BuoyUp <span>chain</span></a>
   <ol id="toc">
     <li><a href="#top" data-i18n="toc.top">The idea</a></li>
     <li><a href="#does" data-i18n="toc.does">What it does</a></li>
@@ -252,7 +252,7 @@ pre.code{background:var(--ink);color:var(--sheet);padding:14px 16px;border-radiu
 
 <section id="top">
   <h1 data-i18n="hero.h1">Every bank sees its own share. Nobody can change it.</h1>
-  <p class="lead" data-i18n="hero.lead">This is BouyUp's blockchain service. Agent 4 pays a user, the payout is split between partner banks, and the record goes onto a 4-node FISCO BCOS chain, encrypted so each bank can read only its own part and prove it to anyone.</p>
+  <p class="lead" data-i18n="hero.lead">This is BuoyUp's blockchain service. Agent 4 pays a user, the payout is split between partner banks, and the record goes onto a 4-node FISCO BCOS chain, encrypted so each bank can read only its own part and prove it to anyone.</p>
   <div class="buttons">
     <a class="btn" href="#bench" data-i18n="hero.b1">Try decrypting a withdrawal</a>
     <a class="btn ghost" href="../explorer/" data-i18n="hero.b2">Open the chain explorer</a>
@@ -269,19 +269,19 @@ pre.code{background:var(--ink);color:var(--sheet);padding:14px 16px;border-radiu
 </section>
 
 <section id="does">
-  <h2 data-i18n="does.h2">What this part of BouyUp does</h2>
-  <p data-i18n="does.p">BouyUp lends to e-commerce sellers through five AI agents. This service is the shared, tamper-proof record the agents, the partner banks and auditors rely on.</p>
+  <h2 data-i18n="does.h2">What this part of BuoyUp does</h2>
+  <p data-i18n="does.p">BuoyUp lends to e-commerce sellers through five AI agents. This service is the shared, tamper-proof record the agents, the partner banks and auditors rely on.</p>
   <div class="wide"><table>
     <thead data-i18n="does.thead"><tr><th>Feature</th><th>What it does</th><th>Used by</th></tr></thead>
     <tbody data-i18n="does.tbody">
       <tr><td><b>Withdrawals</b></td><td>Pays a user's account (mock treasury, unlimited funds) and records the payout on chain, encrypted per bank, with the split between the funding banks.</td><td>Agent 4, or a staff member for a manual payout</td></tr>
-      <tr><td><b>Bank catalog</b></td><td>Regions (Vietnam, China) and provinces; 10 demo banks with limits, a written credit policy and a contract with BouyUp.</td><td>Agent 3 reads the policies, Agent 4 picks the banks</td></tr>
+      <tr><td><b>Bank catalog</b></td><td>Regions (Vietnam, China) and provinces; 10 demo banks with limits, a written credit policy and a contract with BuoyUp.</td><td>Agent 3 reads the policies, Agent 4 picks the banks</td></tr>
       <tr><td><b>Audit trail</b></td><td>Stores fingerprints of applications, algorithm output, agent traces and decisions in a chain per case, so a deleted or edited record is detected.</td><td>Agents 1, 2, 3, 5 and the approval gate</td></tr>
       <tr><td><b>Explorer</b></td><td>Public page with blocks, transactions, node status and encrypted withdrawals, plus a box to decrypt with your own key.</td><td>Banks, auditors, the team</td></tr>
       <tr><td><b>This overview</b></td><td>The design, every secret, and a bench to check that decryption works.</td><td>The team</td></tr>
     </tbody>
   </table></div>
-  <p data-i18n="does.p2">BouyUp is the third party in the middle: it pays the user at once from its own funds, then claims each bank's share back from that bank. The record on chain is the proof of payment named in every bank's contract.</p>
+  <p data-i18n="does.p2">BuoyUp is the third party in the middle: it pays the user at once from its own funds, then claims each bank's share back from that bank. The record on chain is the proof of payment named in every bank's contract.</p>
 </section>
 
 <section id="flow">
@@ -289,12 +289,12 @@ pre.code{background:var(--ink);color:var(--sheet);padding:14px 16px;border-radiu
   <ol class="steps" data-i18n="flow.steps">
     <li><b>Agent 4 asks for a payout.</b>It sends the user, the account number, the amount, the region and province, the split between banks in percent, and who is asking. A staff member can do the same by hand, with a reason.</li>
     <li><b>The split is checked.</b>Each percent has at most 2 decimals and the total is exactly 100.00%. Every bank must exist, be active, belong to the region and have an encryption key. Anything else is refused with a clear error.</li>
-    <li><b>BouyUp pays the account.</b>Today this is a mock treasury that always pays; a real bank transfer plugs in at the same spot.</li>
+    <li><b>BuoyUp pays the account.</b>Today this is a mock treasury that always pays; a real bank transfer plugs in at the same spot.</li>
     <li><b>The record is cut into pieces and encrypted.</b>One summary piece, plus one piece per bank with that bank's percent and amount. Each piece gets its own key.</li>
-    <li><b>Keys go into unnamed slots.</b>One slot per reader: BouyUp's master key, and each bank. A bank's slot holds the summary key and its own piece key, nothing more.</li>
+    <li><b>Keys go into unnamed slots.</b>One slot per reader: BuoyUp's master key, and each bank. A bank's slot holds the summary key and its own piece key, nothing more.</li>
     <li><b>The chain stores the sealed record.</b>The encrypted envelope, a fingerprint of every piece and their combined fingerprint. The contract recomputes the combined fingerprint and refuses a mismatch.</li>
     <li><b>Four nodes keep a copy.</b>The response carries the transaction hash, block, the node that sealed it and how many nodes already hold it.</li>
-    <li><b>Each bank reads and proves its share.</b>With its private key a bank opens its slot, reads its piece and checks it against the fingerprint on chain. Its share stays pending until BouyUp claims it from the bank.</li>
+    <li><b>Each bank reads and proves its share.</b>With its private key a bank opens its slot, reads its piece and checks it against the fingerprint on chain. Its share stays pending until BuoyUp claims it from the bank.</li>
   </ol>
 </section>
 
@@ -302,7 +302,7 @@ pre.code{background:var(--ink);color:var(--sheet);padding:14px 16px;border-radiu
   <h2 data-i18n="who.h2">Who can read what</h2>
   <p data-i18n="who.p">A withdrawal funded 60 / 25.5 / 14.5 by VCB, BIDV and TCB is stored as four pieces:</p>
   <div class="wide"><table>
-    <thead data-i18n="who.thead"><tr><th>Piece</th><th>Contents</th><th>BouyUp master key</th><th>VCB</th><th>BIDV</th><th>TCB</th><th>Any other bank</th><th>Public</th></tr></thead>
+    <thead data-i18n="who.thead"><tr><th>Piece</th><th>Contents</th><th>BuoyUp master key</th><th>VCB</th><th>BIDV</th><th>TCB</th><th>Any other bank</th><th>Public</th></tr></thead>
     <tbody data-i18n="who.tbody">
       <tr><td><b>Summary</b></td><td>Amount, currency, region, province, account reference, payout reference, who asked, number of banks</td><td class="y">reads</td><td class="y">reads</td><td class="y">reads</td><td class="y">reads</td><td class="n">no</td><td class="n">no</td></tr>
       <tr><td><b>VCB's share</b></td><td>60%, 300,000,000 VND, contract BU-VCB-2026-01</td><td class="y">reads</td><td class="y">reads</td><td class="n">no</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
@@ -375,7 +375,7 @@ pre.code{background:var(--ink);color:var(--sheet);padding:14px 16px;border-radiu
   </div>
   <div class="buttons"><button class="btn ghost" id="revealall" type="button" data-i18n="secrets.revealall">Show all private keys</button><button class="btn ghost" id="copyjson" type="button" data-i18n="secrets.copyjson">Copy all as JSON</button></div>
   <div class="wide"><table id="secrets-table"><thead data-i18n="secrets.thead"><tr><th>Secret</th><th>What it unlocks</th><th>Private key or value</th></tr></thead><tbody></tbody></table></div>
-  <p class="small muted" data-i18n="secrets.note">The <b>master key</b> and the <b>bank keys</b> decrypt withdrawals. The <b>chain signing keys</b> write to the chain but cannot read anything encrypted. The <b>reference salt</b> turns account and staff references back into real ids. In this demo every key lives in the file set by <code>bankKeysFile</code>, created on first start. In production each bank keeps its own private key and BouyUp only stores the bank's public key; the master key belongs in an HSM or KMS.</p>
+  <p class="small muted" data-i18n="secrets.note">The <b>master key</b> and the <b>bank keys</b> decrypt withdrawals. The <b>chain signing keys</b> write to the chain but cannot read anything encrypted. The <b>reference salt</b> turns account and staff references back into real ids. In this demo every key lives in the file set by <code>bankKeysFile</code>, created on first start. In production each bank keeps its own private key and BuoyUp only stores the bank's public key; the master key belongs in an HSM or KMS.</p>
 </section>
 
 <section id="yourself">
@@ -437,7 +437,7 @@ const short = h => h && h.length > 22 ? h.slice(0,10)+'…'+h.slice(-8) : (h||''
 const minor = {VND:0, CNY:2};
 const money = (a,c) => { const d = minor[c] ?? 0; return (a/Math.pow(10,d)).toLocaleString(LANG === 'vi' ? 'vi-VN' : 'en-US',{minimumFractionDigits:d,maximumFractionDigits:d})+' '+(c||''); };
 const COLORS = ['#1E7A4F','#9A6F14','#2F6FB0','#A8321F','#6B4FA0','#3C8C8C'];
-let TOKEN = ''; try { TOKEN = sessionStorage.getItem('bouyup-token') || ''; } catch(e) {}
+let TOKEN = ''; try { TOKEN = sessionStorage.getItem('buoyup-token') || ''; } catch(e) {}
 let OVERVIEW = null, WDS = [], KEYS = [], CHOICE = {wd:'', key:''}, TAB = 'py';
 let CHAIN = null, CHAIN_ERR = '', HERO = {id:'', opened:null}, LAST_ALL = null, LAST_ONE = null, SECRETS_STATE = 'loading';
 
@@ -448,31 +448,31 @@ const VI_STATIC = {
   'toc.security':'Bảo mật, từng kỹ thuật', 'toc.bench':'Thử mọi khóa', 'toc.secrets':'Khóa bí mật', 'toc.yourself':'Tự giải mã',
   'toc.endpoints':'Endpoint', 'toc.limits':'Giới hạn và cấu hình',
   'hero.h1':'Mỗi ngân hàng chỉ thấy phần của mình. Không ai sửa được.',
-  'hero.lead':'Đây là dịch vụ blockchain của BouyUp. Agent 4 chi trả cho người dùng, khoản chi được chia giữa các ngân hàng đối tác, và bản ghi được đưa lên chuỗi FISCO BCOS 4 node. Bản ghi được mã hóa để mỗi ngân hàng chỉ đọc được phần của mình và chứng minh phần đó với bất kỳ ai.',
+  'hero.lead':'Đây là dịch vụ blockchain của BuoyUp. Agent 4 chi trả cho người dùng, khoản chi được chia giữa các ngân hàng đối tác, và bản ghi được đưa lên chuỗi FISCO BCOS 4 node. Bản ghi được mã hóa để mỗi ngân hàng chỉ đọc được phần của mình và chứng minh phần đó với bất kỳ ai.',
   'hero.b1':'Thử giải mã một lệnh rút tiền', 'hero.b2':'Mở trình khám phá chuỗi', 'hero.b3':'Tài liệu API',
   'hero.envhead':'Lệnh rút tiền mới nhất trên chuỗi, đúng như mọi thành viên nhìn thấy',
   'hero.envnote':'Các phần bị khóa và các ô khóa không tên: chuỗi chỉ hiển thị đến vậy. Chọn một khóa ở mục <a href="#bench">Thử mọi khóa</a> để xem khóa đó mở được phần nào.',
-  'does.h2':'Phần này của BouyUp làm gì',
-  'does.p':'BouyUp cho người bán hàng thương mại điện tử vay vốn thông qua năm AI agent. Dịch vụ này là bản ghi dùng chung, không thể sửa đổi, mà các agent, ngân hàng đối tác và kiểm toán viên cùng dựa vào.',
+  'does.h2':'Phần này của BuoyUp làm gì',
+  'does.p':'BuoyUp cho người bán hàng thương mại điện tử vay vốn thông qua năm AI agent. Dịch vụ này là bản ghi dùng chung, không thể sửa đổi, mà các agent, ngân hàng đối tác và kiểm toán viên cùng dựa vào.',
   'does.thead':'<tr><th>Tính năng</th><th>Chức năng</th><th>Ai dùng</th></tr>',
   'does.tbody':`<tr><td><b>Rút tiền</b></td><td>Chi trả vào tài khoản người dùng (kho quỹ giả lập, tiền không giới hạn) và ghi khoản chi lên chuỗi, mã hóa riêng cho từng ngân hàng, kèm tỷ lệ chia giữa các ngân hàng cấp vốn.</td><td>Agent 4, hoặc nhân viên khi chi trả thủ công</td></tr>
-    <tr><td><b>Danh mục ngân hàng</b></td><td>Khu vực (Việt Nam, Trung Quốc) và tỉnh/thành; 10 ngân hàng mẫu với hạn mức, chính sách tín dụng bằng văn bản và hợp đồng với BouyUp.</td><td>Agent 3 đọc chính sách, Agent 4 chọn ngân hàng</td></tr>
+    <tr><td><b>Danh mục ngân hàng</b></td><td>Khu vực (Việt Nam, Trung Quốc) và tỉnh/thành; 10 ngân hàng mẫu với hạn mức, chính sách tín dụng bằng văn bản và hợp đồng với BuoyUp.</td><td>Agent 3 đọc chính sách, Agent 4 chọn ngân hàng</td></tr>
     <tr><td><b>Nhật ký kiểm toán</b></td><td>Lưu dấu vân tay (hash) của hồ sơ vay, kết quả thuật toán, vết xử lý của agent và các quyết định thành một chuỗi cho từng hồ sơ, nên bản ghi bị xóa hoặc bị sửa sẽ bị phát hiện.</td><td>Agent 1, 2, 3, 5 và bước phê duyệt</td></tr>
     <tr><td><b>Explorer</b></td><td>Trang công khai hiển thị block, giao dịch, trạng thái node và các lệnh rút tiền đã mã hóa, kèm ô để giải mã bằng khóa của bạn.</td><td>Ngân hàng, kiểm toán viên, cả nhóm</td></tr>
     <tr><td><b>Trang tổng quan này</b></td><td>Thiết kế, mọi khóa bí mật, và một bàn thử để kiểm tra việc giải mã có hoạt động.</td><td>Cả nhóm</td></tr>`,
-  'does.p2':'BouyUp là bên thứ ba đứng giữa: BouyUp trả ngay cho người dùng bằng tiền của mình, sau đó thu lại phần của từng ngân hàng từ chính ngân hàng đó. Bản ghi trên chuỗi là bằng chứng thanh toán được nêu trong hợp đồng với mỗi ngân hàng.',
+  'does.p2':'BuoyUp là bên thứ ba đứng giữa: BuoyUp trả ngay cho người dùng bằng tiền của mình, sau đó thu lại phần của từng ngân hàng từ chính ngân hàng đó. Bản ghi trên chuỗi là bằng chứng thanh toán được nêu trong hợp đồng với mỗi ngân hàng.',
   'flow.h2':'Một lệnh rút tiền, từng bước',
   'flow.steps':`<li><b>Agent 4 yêu cầu chi trả.</b>Agent gửi người dùng, số tài khoản, số tiền, khu vực và tỉnh/thành, tỷ lệ chia giữa các ngân hàng theo phần trăm, và ai đang yêu cầu. Nhân viên cũng có thể làm thủ công, kèm lý do.</li>
     <li><b>Kiểm tra tỷ lệ chia.</b>Mỗi phần trăm có tối đa 2 chữ số thập phân và tổng phải đúng 100.00%. Mỗi ngân hàng phải tồn tại, đang hoạt động, thuộc khu vực đó và có khóa mã hóa. Mọi trường hợp khác bị từ chối kèm thông báo lỗi rõ ràng.</li>
-    <li><b>BouyUp chi trả vào tài khoản.</b>Hiện tại là kho quỹ giả lập luôn chi trả thành công; chuyển khoản ngân hàng thật sẽ gắn vào đúng chỗ này.</li>
+    <li><b>BuoyUp chi trả vào tài khoản.</b>Hiện tại là kho quỹ giả lập luôn chi trả thành công; chuyển khoản ngân hàng thật sẽ gắn vào đúng chỗ này.</li>
     <li><b>Bản ghi được chia thành nhiều phần và mã hóa.</b>Một phần tóm tắt, cộng với mỗi ngân hàng một phần chứa tỷ lệ và số tiền của ngân hàng đó. Mỗi phần có khóa riêng.</li>
-    <li><b>Khóa được đặt vào các ô không tên.</b>Mỗi người đọc một ô: khóa chủ của BouyUp và từng ngân hàng. Ô của một ngân hàng chỉ chứa khóa của phần tóm tắt và khóa phần của chính ngân hàng đó.</li>
+    <li><b>Khóa được đặt vào các ô không tên.</b>Mỗi người đọc một ô: khóa chủ của BuoyUp và từng ngân hàng. Ô của một ngân hàng chỉ chứa khóa của phần tóm tắt và khóa phần của chính ngân hàng đó.</li>
     <li><b>Chuỗi lưu bản ghi đã niêm phong.</b>Gồm phong bì đã mã hóa, dấu vân tay của từng phần và dấu vân tay tổng hợp. Hợp đồng thông minh tự tính lại dấu vân tay tổng hợp và từ chối nếu không khớp.</li>
     <li><b>Bốn node cùng giữ một bản sao.</b>Phản hồi trả về mã giao dịch (tx hash), số block, node đã niêm phong và số node đã có bản ghi.</li>
-    <li><b>Mỗi ngân hàng đọc và chứng minh phần của mình.</b>Dùng khóa riêng, ngân hàng mở ô của mình, đọc phần của mình và đối chiếu với dấu vân tay trên chuỗi. Phần đó ở trạng thái chờ cho đến khi BouyUp thu lại từ ngân hàng.</li>`,
+    <li><b>Mỗi ngân hàng đọc và chứng minh phần của mình.</b>Dùng khóa riêng, ngân hàng mở ô của mình, đọc phần của mình và đối chiếu với dấu vân tay trên chuỗi. Phần đó ở trạng thái chờ cho đến khi BuoyUp thu lại từ ngân hàng.</li>`,
   'who.h2':'Ai đọc được gì',
   'who.p':'Một lệnh rút tiền do VCB, BIDV và TCB cấp vốn theo tỷ lệ 60 / 25.5 / 14.5 được lưu thành bốn phần:',
-  'who.thead':'<tr><th>Phần</th><th>Nội dung</th><th>Khóa chủ BouyUp</th><th>VCB</th><th>BIDV</th><th>TCB</th><th>Ngân hàng khác</th><th>Công khai</th></tr>',
+  'who.thead':'<tr><th>Phần</th><th>Nội dung</th><th>Khóa chủ BuoyUp</th><th>VCB</th><th>BIDV</th><th>TCB</th><th>Ngân hàng khác</th><th>Công khai</th></tr>',
   'who.tbody':`<tr><td><b>Tóm tắt</b></td><td>Số tiền, loại tiền, khu vực, tỉnh/thành, mã tham chiếu tài khoản, mã tham chiếu chi trả, người yêu cầu, số ngân hàng</td><td class="y">đọc được</td><td class="y">đọc được</td><td class="y">đọc được</td><td class="y">đọc được</td><td class="n">không</td><td class="n">không</td></tr>
     <tr><td><b>Phần của VCB</b></td><td>60%, 300.000.000 VND, hợp đồng BU-VCB-2026-01</td><td class="y">đọc được</td><td class="y">đọc được</td><td class="n">không</td><td class="n">không</td><td class="n">không</td><td class="n">không</td></tr>
     <tr><td><b>Phần của BIDV</b></td><td>25.5%, 127.500.000 VND</td><td class="y">đọc được</td><td class="n">không</td><td class="y">đọc được</td><td class="n">không</td><td class="n">không</td><td class="n">không</td></tr>
@@ -490,7 +490,7 @@ const VI_STATIC = {
   'secrets.tokenneed':'Server này cần token API để hiển thị khóa bí mật. Token chỉ được giữ trong tab trình duyệt này.',
   'secrets.tokenlabel':'Token API', 'secrets.tokenbtn':'Hiện khóa bí mật', 'secrets.revealall':'Hiện tất cả khóa riêng', 'secrets.copyjson':'Sao chép tất cả dạng JSON',
   'secrets.thead':'<tr><th>Khóa bí mật</th><th>Mở được gì</th><th>Khóa riêng hoặc giá trị</th></tr>',
-  'secrets.note':'<b>Khóa chủ</b> và <b>khóa ngân hàng</b> giải mã được lệnh rút tiền. <b>Khóa ký của chuỗi</b> ghi được lên chuỗi nhưng không đọc được dữ liệu đã mã hóa. <b>Salt tham chiếu</b> giúp đổi mã tham chiếu tài khoản và nhân viên về mã thật. Trong bản demo, mọi khóa nằm trong file do <code>bankKeysFile</code> chỉ định, được tạo ở lần chạy đầu tiên. Khi chạy thật, mỗi ngân hàng tự giữ khóa riêng và BouyUp chỉ lưu khóa công khai của ngân hàng; khóa chủ phải nằm trong HSM hoặc KMS.',
+  'secrets.note':'<b>Khóa chủ</b> và <b>khóa ngân hàng</b> giải mã được lệnh rút tiền. <b>Khóa ký của chuỗi</b> ghi được lên chuỗi nhưng không đọc được dữ liệu đã mã hóa. <b>Salt tham chiếu</b> giúp đổi mã tham chiếu tài khoản và nhân viên về mã thật. Trong bản demo, mọi khóa nằm trong file do <code>bankKeysFile</code> chỉ định, được tạo ở lần chạy đầu tiên. Khi chạy thật, mỗi ngân hàng tự giữ khóa riêng và BuoyUp chỉ lưu khóa công khai của ngân hàng; khóa chủ phải nằm trong HSM hoặc KMS.',
   'yourself.h2':'Tự giải mã',
   'yourself.p':'Bàn thử ở trên nhờ server này giải mã. Để kiểm chứng mà không cần tin server, hãy giải mã trên máy của bạn. Các lệnh dưới đây đã điền sẵn lệnh rút tiền và khóa bạn chọn ở bàn thử.',
   'yourself.tabpy':'Python (không cần tin server)', 'yourself.tabcli':'Lệnh sgchain', 'common.copy':'Sao chép',
@@ -517,7 +517,7 @@ const VI_STATIC = {
 
 const TX = {
   en: {
-    title:'BouyUp Chain Overview', dark:'Switch to dark', light:'Switch to light',
+    title:'BuoyUp Chain Overview', dark:'Switch to dark', light:'Switch to light',
     connecting:'Connecting to the chain…', loading:'Loading…',
     nodes:(u,n)=>`${u} of ${n} nodes online`, block:n=>`Block ${n}`, recorded:n=>`${n} withdrawal${n===1?'':'s'} recorded`,
     fisco:g=>`FISCO BCOS, group ${g}`, mockLedger:'In-memory test ledger', unreachable:m=>`Chain not reachable: ${m}`,
@@ -545,7 +545,7 @@ const TX = {
       curl:'Asks this server to decrypt. Quickest, but you trust the server for the answer. In PowerShell use curl.exe and escape the inner quotes.'},
   },
   vi: {
-    title:'Tổng quan BouyUp Chain', dark:'Nền tối', light:'Nền sáng',
+    title:'Tổng quan BuoyUp Chain', dark:'Nền tối', light:'Nền sáng',
     connecting:'Đang kết nối tới chuỗi…', loading:'Đang tải…',
     nodes:(u,n)=>`${u}/${n} node đang chạy`, block:n=>`Block ${n}`, recorded:n=>`${n} lệnh rút tiền đã ghi`,
     fisco:g=>`FISCO BCOS, nhóm ${g}`, mockLedger:'Sổ cái thử nghiệm trong bộ nhớ', unreachable:m=>`Không kết nối được chuỗi: ${m}`,
@@ -577,14 +577,14 @@ const t = () => TX[LANG];
 
 /* server-provided secret descriptions, translated by name */
 const VI_SECRETS = [
-  [/master key/i, 'Khóa chủ BouyUp', 'MỌI phần của MỌI lệnh rút tiền (khóa chủ có một ô trong tất cả các lệnh)'],
+  [/master key/i, 'Khóa chủ BuoyUp', 'MỌI phần của MỌI lệnh rút tiền (khóa chủ có một ô trong tất cả các lệnh)'],
   [/admin signing key/i, 'Khóa ký admin của chuỗi', 'triển khai hợp đồng và cấp quyền'],
   [/operator signing key/i, 'Khóa ký operator của chuỗi', 'ghi lệnh rút tiền và dấu vân tay kiểm toán (không đọc được chúng)'],
   [/reference salt/i, 'Salt tham chiếu (refSalt)', 'đối chiếu accountRef hoặc staffRef về người dùng/tài khoản hoặc mã nhân viên (mã tham chiếu là HMAC-SHA256 với salt này)'],
   [/api token/i, 'Token API', 'gọi các endpoint /v1/*, kể cả xem khóa bí mật'],
 ];
 const viHeld = h => String(h || '').replace(/production: an /g, 'production: ').replace(/production:/g, 'khi chạy thật:').replace(/ or generated/g, ' hoặc tự tạo')
-  .replace(/never on a server disk/g, 'không bao giờ nằm trên ổ đĩa server').replace(/^config /, 'cấu hình ').replace(/the bank itself \(BouyUp only knows the public key\)/, 'chính ngân hàng (BouyUp chỉ biết khóa công khai)');
+  .replace(/never on a server disk/g, 'không bao giờ nằm trên ổ đĩa server').replace(/^config /, 'cấu hình ').replace(/the bank itself \(BuoyUp only knows the public key\)/, 'chính ngân hàng (BuoyUp chỉ biết khóa công khai)');
 function secretText(s){
   if (LANG !== 'vi') return {name:s.name, unlocks:s.unlocks, held:s.heldBy};
   const m = VI_SECRETS.find(([re]) => re.test(s.name));
@@ -602,7 +602,7 @@ function setLang(l, save){
   document.querySelectorAll('[data-i18n]').forEach(el => { const k = el.dataset.i18n; el.innerHTML = (LANG === 'vi' && VI_STATIC[k]) || STATIC_EN[k]; });
   document.querySelectorAll('[data-i18n-ph]').forEach(el => { const k = el.dataset.i18nPh; el.setAttribute('placeholder', (LANG === 'vi' && VI_STATIC[k]) || STATIC_EN[k]); });
   document.querySelectorAll('[data-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === LANG)));
-  if (save) { try { localStorage.setItem('bouyup-lang', LANG); } catch(e) {} const u = new URL(location.href); u.searchParams.set('lang', LANG); history.replaceState(null, '', u); }
+  if (save) { try { localStorage.setItem('buoyup-lang', LANG); } catch(e) {} const u = new URL(location.href); u.searchParams.set('lang', LANG); history.replaceState(null, '', u); }
   themeLabel(); renderTech(); renderEP(); renderStatus(); fillWithdrawals(); renderHero(); renderSecrets(); renderAll(); renderOne(); renderCmd(); renderDemoForm(); renderLive();
 }
 document.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => setLang(b.dataset.lang, true));
@@ -618,8 +618,8 @@ async function decrypt(id, key){ const r = await fetch('../explorer/api/decrypt'
 const root = document.documentElement;
 const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
 function themeLabel(){ $('#theme').textContent = isDark() ? t().light : t().dark; }
-try { const th = localStorage.getItem('bouyup-theme'); if (th) root.dataset.theme = th; } catch(e) {}
-$('#theme').onclick = () => { root.dataset.theme = isDark() ? 'light' : 'dark'; try { localStorage.setItem('bouyup-theme', root.dataset.theme); } catch(e) {} themeLabel(); };
+try { const th = localStorage.getItem('buoyup-theme'); if (th) root.dataset.theme = th; } catch(e) {}
+$('#theme').onclick = () => { root.dataset.theme = isDark() ? 'light' : 'dark'; try { localStorage.setItem('buoyup-theme', root.dataset.theme); } catch(e) {} themeLabel(); };
 
 /* section index highlight */
 (function(){ const links = [...document.querySelectorAll('#toc a')]; const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
@@ -632,60 +632,60 @@ const TECH = {
  en: [
   ['A consortium blockchain (FISCO BCOS v2.11.1, 4 nodes)', 'one party rewriting history',
    'Every member runs a node with the full ledger. Blocks are agreed by PBFT consensus: a block needs two thirds of the sealer nodes, so one broken or dishonest node changes nothing.',
-   'Banks, auditors and arbitrators can trust the record without trusting BouyUp\'s database.'],
+   'Banks, auditors and arbitrators can trust the record without trusting BuoyUp\'s database.'],
   ['Signed transactions and contract roles', 'anyone writing records',
-   'Only the BouyUp operator key may record withdrawals and audit fingerprints; only the admin key may grant roles. The contracts check this on every write.',
+   'Only the BuoyUp operator key may record withdrawals and audit fingerprints; only the admin key may grant roles. The contracts check this on every write.',
    'A stolen API token alone cannot forge chain records.'],
   ['Envelope encryption per bank (X25519, HKDF-SHA256, AES-256-GCM)', 'banks seeing each other\'s volumes',
    'Each piece has its own random 256-bit key. The keys sit in slots, one per reader, each locked with a key only that reader can compute from its private key. Slots have no names and are shuffled.',
    'The record is public and permanent, yet each bank learns only its own share; the chain does not even reveal which banks took part.'],
-  ['Fingerprints of every piece, with a Merkle root', 'BouyUp or anyone else showing different contents later',
+  ['Fingerprints of every piece, with a Merkle root', 'BuoyUp or anyone else showing different contents later',
    'SHA-256 of each piece\'s readable text (with a random salt) is stored on chain, plus their Merkle root, which the contract recomputes. AES-GCM alone would let a crafted record decrypt differently under different keys; only one text matches the fingerprint.',
    'A bank proves its share to an arbitrator by showing just that piece, without handing over its key.'],
   ['Records bound to their withdrawal id', 'pieces copied between withdrawals',
    'Every piece and slot is encrypted with its withdrawal id as associated data; moved elsewhere it no longer opens.',
    'A valid share from one withdrawal cannot be passed off as part of another.'],
   ['Salted references instead of personal data', 'personal data on a shared ledger',
-   'User id with account number, and staff ids, become HMAC-SHA256 references with BouyUp\'s secret salt, and sit inside the encrypted summary.',
-   'No personal data on chain; only BouyUp can match a reference back to a person.'],
+   'User id with account number, and staff ids, become HMAC-SHA256 references with BuoyUp\'s secret salt, and sit inside the encrypted summary.',
+   'No personal data on chain; only BuoyUp can match a reference back to a person.'],
   ['Audit trail hash chain', 'deleting or reordering agent records',
    'Each case keeps a chain: every new record\'s head is keccak256 of the previous head, its kind, its fingerprint and its time.',
    'GET /v1/audit/anchors/{case}/verify shows exactly where a record went missing or was changed.'],
   ['Safe retries', 'paying twice',
    'A requestId makes a withdrawal idempotent: a retry returns the same record; reusing the id for different data is refused.',
    'Agent 4 can retry on timeouts without risk.'],
-  ['Keys owned by the banks', 'BouyUp holding banks\' secrets in production',
+  ['Keys owned by the banks', 'BuoyUp holding banks\' secrets in production',
    'A bank keeps its private key and registers only its public key. When it changes key, new records use the new one and old ones keep the old one. Nothing on chain shows that a key changed.',
-   'In production BouyUp never needs a bank\'s private key; only its own master key, which belongs in an HSM or KMS.'],
+   'In production BuoyUp never needs a bank\'s private key; only its own master key, which belongs in an HSM or KMS.'],
  ],
  vi: [
   ['Blockchain liên minh (FISCO BCOS v2.11.1, 4 node)', 'một bên tự viết lại lịch sử',
    'Mỗi thành viên chạy một node giữ toàn bộ sổ cái. Block được chốt bằng đồng thuận PBFT: cần hai phần ba số node niêm phong đồng ý, nên một node bị hỏng hoặc gian lận không thay đổi được gì.',
-   'Ngân hàng, kiểm toán viên và trọng tài tin được bản ghi mà không cần tin cơ sở dữ liệu của BouyUp.'],
+   'Ngân hàng, kiểm toán viên và trọng tài tin được bản ghi mà không cần tin cơ sở dữ liệu của BuoyUp.'],
   ['Giao dịch có chữ ký và phân quyền trong hợp đồng', 'người không có quyền ghi bản ghi',
-   'Chỉ khóa operator của BouyUp được ghi lệnh rút tiền và dấu vân tay kiểm toán; chỉ khóa admin được cấp quyền. Hợp đồng kiểm tra điều này ở mỗi lần ghi.',
+   'Chỉ khóa operator của BuoyUp được ghi lệnh rút tiền và dấu vân tay kiểm toán; chỉ khóa admin được cấp quyền. Hợp đồng kiểm tra điều này ở mỗi lần ghi.',
    'Chỉ lấy cắp được token API thì vẫn không giả mạo được bản ghi trên chuỗi.'],
   ['Mã hóa phong bì cho từng ngân hàng (X25519, HKDF-SHA256, AES-256-GCM)', 'ngân hàng nhìn thấy khối lượng của nhau',
    'Mỗi phần có một khóa ngẫu nhiên 256-bit riêng. Các khóa nằm trong các ô, mỗi người đọc một ô, mỗi ô được khóa bằng một khóa mà chỉ người đọc đó tính ra được từ khóa riêng của mình. Các ô không có tên và được xáo trộn thứ tự.',
    'Bản ghi công khai và tồn tại vĩnh viễn, nhưng mỗi ngân hàng chỉ biết phần của mình; chuỗi thậm chí không tiết lộ những ngân hàng nào tham gia.'],
-  ['Dấu vân tay của từng phần, kèm gốc Merkle', 'BouyUp hay bất kỳ ai đưa ra nội dung khác về sau',
+  ['Dấu vân tay của từng phần, kèm gốc Merkle', 'BuoyUp hay bất kỳ ai đưa ra nội dung khác về sau',
    'SHA-256 của nội dung từng phần (kèm salt ngẫu nhiên) được lưu trên chuỗi, cùng gốc Merkle của chúng, và hợp đồng tự tính lại gốc này. Nếu chỉ dùng AES-GCM, một bản ghi được tạo có chủ đích có thể giải mã ra nội dung khác nhau với các khóa khác nhau; chỉ một nội dung khớp với dấu vân tay.',
    'Ngân hàng chứng minh phần của mình với trọng tài chỉ bằng cách đưa ra đúng phần đó, không cần giao khóa.'],
   ['Bản ghi gắn với mã lệnh rút tiền', 'sao chép các phần giữa các lệnh rút tiền',
    'Mọi phần và mọi ô đều được mã hóa với mã lệnh rút tiền làm dữ liệu liên kết (associated data); chuyển sang lệnh khác là không mở được nữa.',
    'Không thể lấy một phần hợp lệ của lệnh này để giả làm phần của lệnh khác.'],
   ['Mã tham chiếu có salt thay cho dữ liệu cá nhân', 'dữ liệu cá nhân nằm trên sổ cái dùng chung',
-   'Mã người dùng kèm số tài khoản, và mã nhân viên, được biến thành mã tham chiếu HMAC-SHA256 với salt bí mật của BouyUp, và nằm bên trong phần tóm tắt đã mã hóa.',
-   'Không có dữ liệu cá nhân trên chuỗi; chỉ BouyUp đối chiếu được mã tham chiếu với người thật.'],
+   'Mã người dùng kèm số tài khoản, và mã nhân viên, được biến thành mã tham chiếu HMAC-SHA256 với salt bí mật của BuoyUp, và nằm bên trong phần tóm tắt đã mã hóa.',
+   'Không có dữ liệu cá nhân trên chuỗi; chỉ BuoyUp đối chiếu được mã tham chiếu với người thật.'],
   ['Chuỗi hash cho nhật ký kiểm toán', 'xóa hoặc đảo thứ tự bản ghi của agent',
    'Mỗi hồ sơ có một chuỗi riêng: đầu chuỗi mới là keccak256 của đầu chuỗi trước, loại bản ghi, dấu vân tay và thời điểm của nó.',
    'GET /v1/audit/anchors/{case}/verify chỉ ra chính xác chỗ bản ghi bị mất hoặc bị sửa.'],
   ['Gửi lại an toàn', 'chi trả hai lần',
    'requestId làm cho lệnh rút tiền có tính idempotent: gửi lại sẽ nhận về cùng bản ghi; dùng lại mã đó cho dữ liệu khác sẽ bị từ chối.',
    'Agent 4 có thể gửi lại khi hết thời gian chờ mà không có rủi ro.'],
-  ['Khóa do ngân hàng sở hữu', 'BouyUp giữ bí mật của ngân hàng khi chạy thật',
+  ['Khóa do ngân hàng sở hữu', 'BuoyUp giữ bí mật của ngân hàng khi chạy thật',
    'Ngân hàng giữ khóa riêng và chỉ đăng ký khóa công khai. Khi đổi khóa, bản ghi mới dùng khóa mới, bản ghi cũ giữ khóa cũ. Trên chuỗi không có gì cho thấy khóa đã đổi.',
-   'Khi chạy thật BouyUp không bao giờ cần khóa riêng của ngân hàng; chỉ cần khóa chủ của chính mình, và khóa này phải nằm trong HSM hoặc KMS.'],
+   'Khi chạy thật BuoyUp không bao giờ cần khóa riêng của ngân hàng; chỉ cần khóa chủ của chính mình, và khóa này phải nằm trong HSM hoặc KMS.'],
  ],
 };
 function renderTech(){ const h = t().techHead;
@@ -789,7 +789,7 @@ document.addEventListener('click', e => {
 });
 $('#revealall').onclick = () => { if (!OVERVIEW) return; OVERVIEW.secrets.forEach((s, i) => { const v = s.privateKey || s.value; if (v && !v.startsWith('(')) SHOWN.add(i); }); renderSecrets(); };
 $('#copyjson').onclick = () => OVERVIEW && copy(JSON.stringify(OVERVIEW.secrets, null, 2), t().wAll);
-$('#tokenbtn').onclick = () => { TOKEN = $('#token').value.trim(); try { sessionStorage.setItem('bouyup-token', TOKEN); } catch(e) {} loadSecrets(); };
+$('#tokenbtn').onclick = () => { TOKEN = $('#token').value.trim(); try { sessionStorage.setItem('buoyup-token', TOKEN); } catch(e) {} loadSecrets(); };
 
 /* bench */
 $('#wd').onchange = e => { CHOICE.wd = e.target.value; LAST_ALL = null; LAST_ONE = null; renderAll(); renderOne(); renderCmd(); drawHero(CHOICE.wd, null); };
@@ -881,12 +881,12 @@ const LT = {
   stepOf:(k,n)=>`Step ${k} of ${n}`, back:'Back', next:'Next', play:'Play', pause:'Pause', again:'Play again',
   kinds:{m:'Measured', h:'How it works', i:'Illustration'},
   legend:['transaction','vote 1 (prepare)','vote 2 (commit)','block'],
-  svc:'BouyUp service', waiting:'waiting', leader:'leader', final:'final', down:'stopped', stuck:'waiting for votes',
+  svc:'BuoyUp service', waiting:'waiting', leader:'leader', final:'final', down:'stopped', stuck:'waiting for votes',
   signed:'signed with the operator key', checked:'100.00% ✓', receipt:'Receipt', vote1:(v,n)=>`vote 1 · ${v}/${n}`, vote2:(v,n)=>`vote 2 · ${v}/${n}`,
   notHeard:'not heard from', ord:i=>(['1st','2nd','3rd','4th','5th','6th','7th'][i-1]||i+'th'), block:n=>`block #${n}`, nodesHold:(a,b)=>`${a} of ${b} nodes hold it`,
   root:'root', slotsLbl:'key slots', quorumOk:(a,b)=>`${a} of ${b} agree: final`, quorumNo:(a,b)=>`${a} of ${b}: not enough, waits`,
   steps:[
-   ['m','The request arrives','A staff member sends a manual withdrawal. BouyUp checks the split: at most 2 decimals per bank, exactly 100.00% in total, and every bank valid for the region.'],
+   ['m','The request arrives','A staff member sends a manual withdrawal. BuoyUp checks the split: at most 2 decimals per bank, exactly 100.00% in total, and every bank valid for the region.'],
    ['m','Paid, then sealed','The mock treasury pays the account. The record is cut into a summary plus one piece per bank. Each piece is locked with its own key, the keys go into unnamed slots, and every piece gets a fingerprint, plus one combined fingerprint (the Merkle root).'],
    ['m','Signed and sent to one node','The operator key signs the transaction and it goes to node0, the node this service talks to. The contract rejects anything not signed by the operator key.'],
    ['h','Shared with every node','node0 passes the transaction on to the other nodes. Each one keeps it in its waiting pool. Nothing is final yet.'],
@@ -926,12 +926,12 @@ const LT = {
   stepOf:(k,n)=>`Bước ${k}/${n}`, back:'Lùi', next:'Tiếp', play:'Phát', pause:'Tạm dừng', again:'Phát lại',
   kinds:{m:'Đo thực tế', h:'Cách hoạt động', i:'Minh họa'},
   legend:['giao dịch','phiếu 1 (prepare)','phiếu 2 (commit)','block'],
-  svc:'Dịch vụ BouyUp', waiting:'đang chờ', leader:'dẫn đầu', final:'đã chốt', down:'đã dừng', stuck:'chờ đủ phiếu',
+  svc:'Dịch vụ BuoyUp', waiting:'đang chờ', leader:'dẫn đầu', final:'đã chốt', down:'đã dừng', stuck:'chờ đủ phiếu',
   signed:'đã ký bằng khóa operator', checked:'100.00% ✓', receipt:'Biên nhận', vote1:(v,n)=>`phiếu 1 · ${v}/${n}`, vote2:(v,n)=>`phiếu 2 · ${v}/${n}`,
   notHeard:'chưa báo', ord:i=>`thứ ${i}`, block:n=>`block #${n}`, nodesHold:(a,b)=>`${a}/${b} node đang giữ`,
   root:'gốc', slotsLbl:'ô khóa', quorumOk:(a,b)=>`${a}/${b} đồng ý: đã chốt`, quorumNo:(a,b)=>`${a}/${b}: không đủ, phải chờ`,
   steps:[
-   ['m','Yêu cầu được gửi đến','Nhân viên gửi một lệnh rút tiền thủ công. BouyUp kiểm tra tỷ lệ chia: mỗi ngân hàng tối đa 2 chữ số thập phân, tổng đúng 100.00%, và mọi ngân hàng đều hợp lệ trong khu vực.'],
+   ['m','Yêu cầu được gửi đến','Nhân viên gửi một lệnh rút tiền thủ công. BuoyUp kiểm tra tỷ lệ chia: mỗi ngân hàng tối đa 2 chữ số thập phân, tổng đúng 100.00%, và mọi ngân hàng đều hợp lệ trong khu vực.'],
    ['m','Chi trả, rồi niêm phong','Kho quỹ giả lập chi trả vào tài khoản. Bản ghi được chia thành phần tóm tắt và mỗi ngân hàng một phần. Mỗi phần được khóa bằng khóa riêng, các khóa nằm trong các ô không tên, và mỗi phần có dấu vân tay, cộng với một dấu vân tay tổng hợp (gốc Merkle).'],
    ['m','Ký và gửi tới một node','Khóa operator ký giao dịch, rồi giao dịch được gửi tới node0, node mà dịch vụ này kết nối. Hợp đồng từ chối mọi giao dịch không được ký bằng khóa operator.'],
    ['h','Chia sẻ cho mọi node','node0 chuyển giao dịch cho các node còn lại. Mỗi node giữ nó trong hàng chờ. Chưa có gì được chốt.'],
@@ -1295,7 +1295,7 @@ async function sendDemo(){
 
 /* start: ?lang= wins, then the saved choice, then the browser language */
 (function(){ let l = new URLSearchParams(location.search).get('lang');
-  if (!l) { try { l = localStorage.getItem('bouyup-lang'); } catch(e) {} }
+  if (!l) { try { l = localStorage.getItem('buoyup-lang'); } catch(e) {} }
   if (!l) l = (navigator.language || '').toLowerCase().startsWith('vi') ? 'vi' : 'en';
   setLang(l, false); })();
 loadChain(); loadSecrets();

@@ -1,7 +1,7 @@
-# BouyUp — Vai trò của 4 AI agent
+# BuoyUp — Vai trò của 4 AI agent
 
 > Tài liệu mô tả vai trò tổng quan (overall role) của từng agent.
-> Căn cứ: "BouyUp toàn cảnh mô hình" (28.09.2026) và component FISCO BCOS đã build.
+> Căn cứ: "BuoyUp toàn cảnh mô hình" (28.09.2026) và component FISCO BCOS đã build.
 
 ---
 

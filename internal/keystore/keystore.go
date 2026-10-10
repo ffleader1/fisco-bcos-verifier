@@ -1,8 +1,8 @@
-// Package keystore holds the encryption keys of the withdrawal envelopes: the BouyUp master key pair and one
+// Package keystore holds the encryption keys of the withdrawal envelopes: the BuoyUp master key pair and one
 // public key per bank (plus, in this demo, each bank's private key so the team can test decryption).
 //
-// In production a bank keeps its private key itself and only registers its public key with BouyUp; changing
-// it is the bank's business (PUT /v1/banks/{code}/public-key). BouyUp only needs each bank's CURRENT public
+// In production a bank keeps its private key itself and only registers its public key with BuoyUp; changing
+// it is the bank's business (PUT /v1/banks/{code}/public-key). BuoyUp only needs each bank's CURRENT public
 // key: new withdrawals are locked to it, old ones stay locked to whatever key was current then (the
 // withdrawal's timestamp tells the bank which of its keys to try).
 //
@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"bouyup/fisco/internal/sealing"
+	"buoyup/fisco/internal/sealing"
 )
 
 // Key is one key pair with its history.
@@ -52,7 +52,7 @@ type Store struct {
 	f    file
 }
 
-const note = "BouyUp DEMO KEYS — test only. X25519 key pairs (hex). In production banks keep their private keys and BouyUp keeps the master key in an HSM/KMS."
+const note = "BuoyUp DEMO KEYS — test only. X25519 key pairs (hex). In production banks keep their private keys and BuoyUp keeps the master key in an HSM/KMS."
 
 // Open loads path (creating it with fresh keys when missing) and makes sure every bank code has a key.
 // path "" keeps the keys in memory.
@@ -138,14 +138,14 @@ func (s *Store) save() error {
 // Path is where the keys are stored ("" = memory).
 func (s *Store) Path() string { return s.path }
 
-// MasterPrivate returns the BouyUp master private key (hex).
+// MasterPrivate returns the BuoyUp master private key (hex).
 func (s *Store) MasterPrivate() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.f.Master.PrivateKey
 }
 
-// MasterPublic returns the BouyUp master public key (hex).
+// MasterPublic returns the BuoyUp master public key (hex).
 func (s *Store) MasterPublic() string { s.mu.Lock(); defer s.mu.Unlock(); return s.f.Master.PublicKey }
 
 // BankPublic returns a bank's current public key.

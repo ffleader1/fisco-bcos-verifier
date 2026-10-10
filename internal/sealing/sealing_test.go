@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"bouyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/ledger"
 )
 
 func TestSealOpen(t *testing.T) {

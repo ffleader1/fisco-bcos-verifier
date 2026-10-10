@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"bouyup/fisco/internal/hashing"
-	"bouyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/hashing"
+	"buoyup/fisco/internal/ledger"
 )
 
 // ---------------------------------------------------------------- system

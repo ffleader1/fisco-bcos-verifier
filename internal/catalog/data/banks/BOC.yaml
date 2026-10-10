@@ -1,4 +1,4 @@
-# Mock profile for the BouyUp demo. Not the real policy or terms of Bank of China.
+# Mock profile for the BuoyUp demo. Not the real policy or terms of Bank of China.
 code: BOC
 name: Bank of China
 localName: 中国银行
@@ -104,7 +104,7 @@ policy:
 contract:
   contractNo: BU-BOC-2026-01
   title: Payment facilitation and reimbursement agreement
-  parties: [Bank of China, BouyUp]
+  parties: [Bank of China, BuoyUp]
   status: active
   effectiveFrom: "2026-01-01"
   expiresOn: "2027-12-31"
@@ -117,4 +117,4 @@ contract:
   disputeResolution: China International Economic and Trade Arbitration Commission (CIETAC), Beijing
   termination: 30 days' notice.
   keyClauses:
-    - BouyUp confirms that no withdrawal funded by Bank of China pays a sanctioned party.
+    - BuoyUp confirms that no withdrawal funded by Bank of China pays a sanctioned party.

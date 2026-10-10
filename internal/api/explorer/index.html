@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BouyUp Chain Explorer</title>
+<title>BuoyUp Chain Explorer</title>
 <style>
 :root{
   --bg:#f5f6f8; --panel:#ffffff; --ink:#16181d; --muted:#667085; --line:#e4e7ec; --soft:#f0f2f5;
@@ -64,7 +64,7 @@ textarea{width:100%;min-height:64px;font-family:var(--mono);font-size:12.5px;bor
 </head>
 <body>
 <header><div class="bar">
-  <a class="logo" href="#/">BouyUp Explorer<small>FISCO BCOS</small></a>
+  <a class="logo" href="#/">BuoyUp Explorer<small>FISCO BCOS</small></a>
   <form id="search"><input type="search" id="q" placeholder="Search by withdrawal ID, transaction hash or block number" aria-label="Search"><button>Search</button></form>
   <nav class="toplinks"><a href="../overview/">Overview</a><a href="../docs/">API</a></nav>
 </div></header>
@@ -109,7 +109,7 @@ function wdTable(items){
     `<tr><td><span class="lock">🔒</span><a href="#/withdrawal/${esc(w.withdrawalId)}" class="mono">${esc(w.withdrawalId)}</a></td>
      <td><a href="#/block/${w.blockNumber}">#${w.blockNumber}</a></td><td class="right">${w.pieces}</td>
      <td class="muted">${ago(new Date(w.timestamp).getTime()/1000)}</td></tr>`).join('') + `</table></div>
-     <div class="note">Withdrawals are encrypted: open one and decrypt it with a bank key or the BouyUp master key.</div>`;
+     <div class="note">Withdrawals are encrypted: open one and decrypt it with a bank key or the BuoyUp master key.</div>`;
 }
 
 async function home(){
@@ -145,12 +145,12 @@ function encryptedCard(w){
     <tr><td>Merkle root</td><td>${hashCell(w.root)}</td></tr>
     <tr><td>Commitments</td><td>${w.commitments.map((c,i) => `<span class="mono">${i}: ${esc(short(c))}</span>`).join('<br>')}</td></tr>
     <tr><td>Written by</td><td>${hashCell(w.writer)}</td></tr>
-  </table><div class="note">Amounts, banks and accounts are not visible here. Each bank can decrypt the summary and its own share; the BouyUp master key decrypts everything.</div></div>`;
+  </table><div class="note">Amounts, banks and accounts are not visible here. Each bank can decrypt the summary and its own share; the BuoyUp master key decrypts everything.</div></div>`;
 }
 
 function decryptPanel(id){
   return `<div class="card"><h2>Decrypt with your key</h2><div class="pad">
-    <textarea id="dkey" placeholder="Paste a private key (64 hex characters): a bank key or the BouyUp master key"></textarea>
+    <textarea id="dkey" placeholder="Paste a private key (64 hex characters): a bank key or the BuoyUp master key"></textarea>
     <button class="btn" id="dbtn" data-id="${esc(id)}">Decrypt</button>
     <div class="note" style="padding:8px 0 0">The key is sent to this server only for this request and not stored. To decrypt without trusting the server, use <a href="decrypt_withdrawal.py">decrypt_withdrawal.py</a>.</div>
     <div id="dout"></div></div></div>`;

@@ -17,7 +17,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"bouyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/ledger"
 )
 
 const (
@@ -112,13 +112,13 @@ func (m *Mock) newTx(from, to, contract, method string, events []ledger.Event) l
 	m.txSeq++
 	var b [8]byte
 	binary.BigEndian.PutUint64(b[:], m.txSeq)
-	txHash := hexHash([]byte("bouyup-mock-tx"), b[:])
+	txHash := hexHash([]byte("buoyup-mock-tx"), b[:])
 	number := int64(len(m.blocks) + 1)
 	parent := "0x" + strings.Repeat("0", 64)
 	if len(m.blocks) > 0 {
 		parent = m.blocks[len(m.blocks)-1].b.Hash
 	}
-	blockHash := hexHash([]byte("bouyup-mock-block"), b[:], []byte(parent))
+	blockHash := hexHash([]byte("buoyup-mock-block"), b[:], []byte(parent))
 	if events == nil {
 		events = []ledger.Event{}
 	}

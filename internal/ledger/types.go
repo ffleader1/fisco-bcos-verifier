@@ -1,4 +1,4 @@
-// Package ledger defines the BouyUp blockchain ledger: domain types and the Ledger interface implemented by
+// Package ledger defines the BuoyUp blockchain ledger: domain types and the Ledger interface implemented by
 // the FISCO BCOS adapter (package fisco) and the in-memory mock (package mock).
 //
 // Withdrawals reach the ledger already encrypted (package sealing): the chain stores an envelope, the

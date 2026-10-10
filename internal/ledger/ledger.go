@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-// Ledger is the BouyUp on-chain system of record. Write methods map 1:1 to a WithdrawalLedger / AuditTrail
+// Ledger is the BuoyUp on-chain system of record. Write methods map 1:1 to a WithdrawalLedger / AuditTrail
 // contract function and are signed by the operator (service) key. The explorer reads cover blocks,
 // transactions and the state of every configured node.
 type Ledger interface {

@@ -1,4 +1,4 @@
-# Mock profile for the BouyUp demo. Not the real policy or terms of BIDV.
+# Mock profile for the BuoyUp demo. Not the real policy or terms of BIDV.
 code: BIDV
 name: BIDV
 localName: Ngân hàng TMCP Đầu tư và Phát triển Việt Nam
@@ -116,14 +116,14 @@ policy:
 contract:
   contractNo: BU-BIDV-2026-01
   title: Payment facilitation and reimbursement agreement
-  parties: [BIDV, BouyUp]
+  parties: [BIDV, BuoyUp]
   status: active
   effectiveFrom: "2026-02-01"
   expiresOn: "2028-01-31"
   creditLine: 80000000000
   reimbursementTerms: Reimbursement of BIDV's share within 3 business days of the on-chain record.
   feeTerms: 0.15% of BIDV's share, invoiced monthly.
-  evidenceTerms: The withdrawal record on the BouyUp consortium chain is the evidence of payment.
+  evidenceTerms: The withdrawal record on the BuoyUp consortium chain is the evidence of payment.
   dataTerms: Salted references only on chain; resolution of a reference on written request for a specific withdrawal.
   governingLaw: Laws of Vietnam
   disputeResolution: Vietnam International Arbitration Centre (VIAC), Hà Nội

@@ -10,7 +10,7 @@ import (
 	"github.com/FISCO-BCOS/go-sdk/core/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	"bouyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/ledger"
 )
 
 // nodeIDsMu serializes the GetSyncStatus fan-out of nodeNames.

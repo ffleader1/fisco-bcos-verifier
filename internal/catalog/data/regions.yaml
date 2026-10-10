@@ -1,8 +1,8 @@
-# BouyUp demo catalog — regions.
+# BuoyUp demo catalog — regions.
 # A region is a country. It fixes the currency of a withdrawal and which banks can share it.
 # Amounts everywhere are integers in the currency's minor unit: VND has none (amounts are in đồng),
 # CNY has 2 decimals (amounts are in fen, 1 CNY = 100).
-# Province codes are BouyUp codes. Vietnam uses the 34 provincial units in force since July 2025.
+# Province codes are BuoyUp codes. Vietnam uses the 34 provincial units in force since July 2025.
 
 regions:
   - code: VN

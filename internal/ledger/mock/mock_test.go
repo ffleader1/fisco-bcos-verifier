@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"bouyup/fisco/internal/ledger"
-	"bouyup/fisco/internal/ledger/ledgertest"
-	"bouyup/fisco/internal/ledger/mock"
+	"buoyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/ledger/ledgertest"
+	"buoyup/fisco/internal/ledger/mock"
 )
 
 func TestConformance(t *testing.T) {

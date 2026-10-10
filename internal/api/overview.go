@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"bouyup/fisco/internal/sealing"
+	"buoyup/fisco/internal/sealing"
 )
 
 // decryptScript is the standalone Python decrypt script (served at /explorer/decrypt_withdrawal.py and quoted in
@@ -52,7 +52,7 @@ type secretEntry struct {
 	Status     string `json:"status"` // current | retired
 }
 
-// overview explains this part of BouyUp for the team, lists every secret, and walks through decryption.
+// overview explains this part of BuoyUp for the team, lists every secret, and walks through decryption.
 //
 //	GET /v1/overview                  JSON: sections (markdown) + secrets + decode example
 //	GET /v1/overview?format=markdown  the same as one Markdown document
@@ -62,7 +62,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
 	secs := overviewSections(s, secrets, example)
 	if strings.EqualFold(r.URL.Query().Get("format"), "markdown") || strings.EqualFold(r.URL.Query().Get("format"), "md") {
 		var b strings.Builder
-		b.WriteString("# BouyUp — chain service overview\n\n")
+		b.WriteString("# BuoyUp — chain service overview\n\n")
 		b.WriteString(fmt.Sprintf("Generated %s.\n\n", s.now().UTC().Format(time.RFC3339)))
 		for _, sec := range secs {
 			b.WriteString("## " + sec.Title + "\n\n" + strings.TrimSpace(sec.Markdown) + "\n\n")
@@ -72,7 +72,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, map[string]any{
-		"title": "BouyUp — chain service overview", "generatedAt": s.now().UTC(), "demoKeysShown": s.ShowDemoKeys,
+		"title": "BuoyUp — chain service overview", "generatedAt": s.now().UTC(), "demoKeysShown": s.ShowDemoKeys,
 		"sections": secs, "secrets": secrets, "decodeExample": example,
 	})
 }
@@ -81,7 +81,7 @@ func (s *Server) secrets() []secretEntry {
 	show := s.ShowDemoKeys
 	out := []secretEntry{}
 	m := s.Keys.Master()
-	e := secretEntry{Name: "BouyUp master key", Owner: "BouyUp", Status: "current", PublicKey: m.PublicKey, ActiveFrom: m.ActiveFrom,
+	e := secretEntry{Name: "BuoyUp master key", Owner: "BuoyUp", Status: "current", PublicKey: m.PublicKey, ActiveFrom: m.ActiveFrom,
 		Unlocks: "EVERY piece of EVERY withdrawal (the master key gets a slot in all of them)",
 		HeldBy:  "demo: " + keyFileLabel(s.Keys.Path()) + " · production: an HSM/KMS, never on a server disk"}
 	if show {
@@ -95,11 +95,11 @@ func (s *Server) secrets() []secretEntry {
 		}
 		e := secretEntry{Name: b.Code + " encryption key", Owner: b.Name, Status: "current", PublicKey: k.PublicKey, ActiveFrom: k.ActiveFrom,
 			Unlocks: "the summary and " + b.Code + "'s own share of withdrawals it funds — nothing about other banks",
-			HeldBy:  "demo: " + keyFileLabel(s.Keys.Path()) + " · production: the bank itself (BouyUp only knows the public key)"}
+			HeldBy:  "demo: " + keyFileLabel(s.Keys.Path()) + " · production: the bank itself (BuoyUp only knows the public key)"}
 		if show {
 			e.PrivateKey = k.PrivateKey
 			if e.PrivateKey == "" {
-				e.PrivateKey = "(registered by the bank: BouyUp does not have it)"
+				e.PrivateKey = "(registered by the bank: BuoyUp does not have it)"
 			}
 		}
 		out = append(out, e)
@@ -114,7 +114,7 @@ func (s *Server) secrets() []secretEntry {
 	}
 	for _, role := range []string{"admin", "operator"} {
 		if v, ok := s.ChainKeys[role]; ok {
-			e := secretEntry{Name: "chain " + role + " signing key", Owner: "BouyUp", Status: "current",
+			e := secretEntry{Name: "chain " + role + " signing key", Owner: "BuoyUp", Status: "current",
 				Unlocks: map[string]string{"admin": "deploying contracts and granting roles", "operator": "writing withdrawal records and audit anchors (cannot read them)"}[role],
 				HeldBy:  "demo: keys/" + role + ".key or generated · production: HSM/KMS"}
 			if show {
@@ -123,14 +123,14 @@ func (s *Server) secrets() []secretEntry {
 			out = append(out, e)
 		}
 	}
-	salt := secretEntry{Name: "reference salt (refSalt)", Owner: "BouyUp", Status: "current", HeldBy: "config refSalt / SG_REF_SALT",
+	salt := secretEntry{Name: "reference salt (refSalt)", Owner: "BuoyUp", Status: "current", HeldBy: "config refSalt / SG_REF_SALT",
 		Unlocks: "matching an accountRef or staffRef back to a user/account or staff id (the references are HMAC-SHA256 with this salt)"}
 	if show {
 		salt.Value = string(s.Salt)
 	}
 	out = append(out, salt)
 	if s.Token != "" {
-		t := secretEntry{Name: "API token", Owner: "BouyUp", Status: "current", HeldBy: "config apiToken / SG_API_TOKEN",
+		t := secretEntry{Name: "API token", Owner: "BuoyUp", Status: "current", HeldBy: "config apiToken / SG_API_TOKEN",
 			Unlocks: "calling /v1/* (creating withdrawals, reading them decrypted with the master key, this overview)"}
 		if show {
 			t.Value = s.Token
@@ -231,20 +231,20 @@ func overviewSections(s *Server, secrets []secretEntry, ex decodeExample) []sect
 	}
 
 	return []section{
-		{ID: "what", Title: "What this part of BouyUp does", Markdown: `
-BouyUp lends to e-commerce sellers through five AI agents. This service is the **blockchain part**: the shared,
-tamper-proof record that the other parts of BouyUp, the partner banks and auditors rely on. It runs on
+		{ID: "what", Title: "What this part of BuoyUp does", Markdown: `
+BuoyUp lends to e-commerce sellers through five AI agents. This service is the **blockchain part**: the shared,
+tamper-proof record that the other parts of BuoyUp, the partner banks and auditors rely on. It runs on
 **FISCO BCOS v2.11.1**, a consortium (permissioned) blockchain, with 4 nodes.
 
 | Feature | What it does | Used by |
 | --- | --- | --- |
 | Withdrawals | Pays a user's account (mock treasury) and records the payout on chain, **encrypted**, with the split between the funding banks | Agent 4 (Disbursement & Collection), or a human for a manual payout |
-| Bank catalog | Regions (VN, CN) and provinces; 10 demo banks with numeric limits, a written credit policy and a contract with BouyUp (YAML files) | Agent 3 reads the policies; Agent 4 picks the banks |
+| Bank catalog | Regions (VN, CN) and provinces; 10 demo banks with numeric limits, a written credit policy and a contract with BuoyUp (YAML files) | Agent 3 reads the policies; Agent 4 picks the banks |
 | Audit trail | Anchors hashes of documents (applications, algorithm output, agent traces, decisions) in a per-case hash chain | Agents 1, 2, 3, 5 and the approval gate |
 | Explorer | Public web page at /explorer/: blocks, transactions, node status, encrypted withdrawals, and a box to decrypt one with your key | Banks, auditors, the team |
 | Overview | This document: what the service does, why it is secure, every secret, how to decrypt | The team |
 
-BouyUp is the third party in the middle: it pays the user at once from its own funds and later claims each bank's
+BuoyUp is the third party in the middle: it pays the user at once from its own funds and later claims each bank's
 share back from that bank (the bank API calls are outside this service). The on-chain record is the evidence of
 payment named in each bank's contract: it proves that bank X funded x% of withdrawal Y.
 `},
@@ -253,7 +253,7 @@ payment named in each bank's contract: it proves that bank X funded x% of withdr
    bank split in percent, and who is asking (actor).
 2. The service checks the split: each percent has at most 2 decimals, the total is exactly 100.00%, every bank
    exists, is active, belongs to the region and has an encryption key.
-3. BouyUp pays the account (mock treasury today).
+3. BuoyUp pays the account (mock treasury today).
 4. The withdrawal is cut into pieces — a **summary** (amount, region, account reference, actor, how many banks)
    and **one piece per bank** (its percent and amount) — and each piece is encrypted (next section).
 5. The encrypted record, a fingerprint (commitment) of each piece and their combined fingerprint (Merkle root)
@@ -268,9 +268,9 @@ payment named in each bank's contract: it proves that bank X funded x% of withdr
   explorer shows, per transaction, which nodes already hold it.
 - **No single party can rewrite history.** Blocks are agreed by PBFT consensus among the sealer nodes: a block
   needs a two-thirds majority, so one dishonest or broken node cannot change or delete a record.
-- **Only allowed keys can write.** Transactions are signed. The contracts check roles: only the BouyUp
+- **Only allowed keys can write.** Transactions are signed. The contracts check roles: only the BuoyUp
   operator key may record withdrawals; only the admin key may grant roles.
-- **Benefit:** a bank, an auditor or an arbitrator can trust the record without trusting BouyUp's database.
+- **Benefit:** a bank, an auditor or an arbitrator can trust the record without trusting BuoyUp's database.
 
 ### 2. Every withdrawal is encrypted on chain ("envelope encryption")
 The chain is shared, so anything written there in clear would be visible to every member — e.g. every bank
@@ -278,8 +278,8 @@ would see every other bank's shares. So each withdrawal is encrypted in pieces:
 
 | Piece | Readable by |
 | --- | --- |
-| Summary (amount, currency, region, province, account reference, payout reference, actor, number of banks) | every bank of that withdrawal + BouyUp |
-| Bank X's share (percent, amount, contract no.) | bank X + BouyUp only |
+| Summary (amount, currency, region, province, account reference, payout reference, actor, number of banks) | every bank of that withdrawal + BuoyUp |
+| Bank X's share (percent, amount, contract no.) | bank X + BuoyUp only |
 
 How:
 - Each piece gets its own random 256-bit key and is encrypted with **AES-256-GCM** (encryption + built-in
@@ -300,14 +300,14 @@ How:
 - **Prove a share without giving up the key:** a bank shows an arbitrator just its decrypted piece; the
   arbitrator hashes it and finds that fingerprint on chain. The bank never hands over its private key (which
   would open all its records).
-- **BouyUp cannot cheat either:** AES-GCM is not "key-committing" — whoever encrypts could craft data that
+- **BuoyUp cannot cheat either:** AES-GCM is not "key-committing" — whoever encrypts could craft data that
   decrypts to different valid texts under different keys (show a bank 60% and an arbitrator 40%). The
   fingerprint is written in the same transaction and only one text matches it.
 - The contract recomputes the Merkle root itself (SHA-256) and rejects the record if it does not match.
 
 ### 4. No personal data on chain
-- User id + account number become an **accountRef** = HMAC-SHA256 with BouyUp's secret salt; a human actor's
-  staff id becomes a **staffRef** the same way. Only BouyUp (holding the salt) can match them back. They sit
+- User id + account number become an **accountRef** = HMAC-SHA256 with BuoyUp's secret salt; a human actor's
+  staff id becomes a **staffRef** the same way. Only BuoyUp (holding the salt) can match them back. They sit
   inside the encrypted summary anyway.
 
 ### 5. Audit trail hash chain
@@ -320,11 +320,11 @@ How:
   the id for different data is refused (409).
 
 ### 7. Keys and key changes
-- Each bank owns its private key and may change it at any time; BouyUp only needs the bank's **current public
+- Each bank owns its private key and may change it at any time; BuoyUp only needs the bank's **current public
   key** (PUT /v1/banks/{code}/public-key). New withdrawals use the new key; older ones stay readable with the
   key that was current then — the withdrawal's timestamp tells the bank which one to try (at most two around
   the change). Nothing on chain reveals that a bank changed its key.
-- The BouyUp master key opens everything: in production it belongs in an HSM/KMS.
+- The BuoyUp master key opens everything: in production it belongs in an HSM/KMS.
 
 ### 8. What is NOT hidden, and limits
 - Visible to all members: that a withdrawal happened, when, its id, the number of pieces (= banks + 1) and the
@@ -350,7 +350,7 @@ You need: a withdrawal id (or its transaction hash) and a private key from the S
 
 1. **Find the withdrawal.** Open /explorer/, pick one under "Latest withdrawals" and copy its id (WD-…). Its
    page shows only the encrypted record: pieces, slots, fingerprints.
-2. **Pick a key.** From the Secrets section: a bank's private key (that bank's view) or the BouyUp master key
+2. **Pick a key.** From the Secrets section: a bank's private key (that bank's view) or the BuoyUp master key
    (everything).
 3. **Decrypt — choose one way:**
    - **Explorer:** on the withdrawal's page, paste the key into "Decrypt with your key" and press Decrypt.

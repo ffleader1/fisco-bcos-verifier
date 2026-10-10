@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Decrypt a BouyUp withdrawal with your own key, without trusting the BouyUp server.
+"""Decrypt a BuoyUp withdrawal with your own key, without trusting the BuoyUp server.
 
     pip install cryptography
     python3 decrypt_withdrawal.py <server> <withdrawal id or tx hash> <your private key hex>
@@ -44,6 +44,7 @@ def main(server, wid, priv_hex):
     eph = bytes.fromhex(env["eph"])
     shared = priv.exchange(X25519PublicKey.from_public_bytes(eph))
     slot_key = HKDF(algorithm=hashes.SHA256(), length=32, salt=eph + my_pub,
+                    # frozen label: the old "BouyUp" spelling is part of the encryption format
                     info=("BouyUp withdrawal v1 " + wid).encode()).derive(shared)
 
     for slot in env["slots"]:  # slots carry no names: try each, AES-GCM rejects the wrong ones

@@ -1,7 +1,7 @@
 // Package hashing turns off-chain data into the 32-byte values written on chain.
 //
 //   - Ref: salted HMAC-SHA256 references for withdrawal target accounts and staff ids, so no personal
-//     identifier is ever written to the shared ledger (PIPL, 断直连 constraints), yet BouyUp — who holds the
+//     identifier is ever written to the shared ledger (PIPL, 断直连 constraints), yet BuoyUp — who holds the
 //     salt — can always recompute and match them.
 //   - Content: SHA-256 over canonical JSON (sorted keys, no insignificant whitespace) for withdrawal records and
 //     audit anchoring of algorithm outputs, agent traces, proposals and human decisions. Anyone holding the
@@ -16,7 +16,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"bouyup/fisco/internal/ledger"
+	"buoyup/fisco/internal/ledger"
 )
 
 // Domains for Ref.

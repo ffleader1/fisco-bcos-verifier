@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"bouyup/fisco/internal/ledger/fisco"
+	"buoyup/fisco/internal/ledger/fisco"
 )
 
 // Keys are private keys given as 0x-hex, a path to a file holding hex, or a FISCO console PEM account file.
@@ -19,7 +19,7 @@ type Keys struct {
 
 type Config struct {
 	ShowDemoKeys    *bool            `json:"showDemoKeys"` // print full keys in GET /v1/overview (default true; demo only)
-	BankKeysFile    string           `json:"bankKeysFile"` // encryption keys: BouyUp master + one per bank (created on first start)
+	BankKeysFile    string           `json:"bankKeysFile"` // encryption keys: BuoyUp master + one per bank (created on first start)
 	Listen          string           `json:"listen"`
 	APIToken        string           `json:"apiToken"`
 	DisableDocs     bool             `json:"disableDocs"`     // hide the /docs/ API reference page

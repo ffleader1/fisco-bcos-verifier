@@ -1,14 +1,15 @@
-// Command sgchain runs the SellerGraph FISCO BCOS component.
+// Command sgchain runs the BouyUp FISCO BCOS component.
 //
-//	sgchain keygen    -out keys -names admin,operator,officer,monitor   # create role keys
-//	sgchain deploy    -config config.json                               # deploy contracts + grant roles + policy
-//	sgchain bootstrap -config config.json                               # re-apply roles/policy (e.g. new funder)
-//	sgchain serve     -config config.json                               # REST API (mock or fisco ledger)
+//	sgchain keygen    -out keys -names admin,operator   # create role keys
+//	sgchain deploy    -config config.json               # deploy contracts + grant the operator its roles
+//	sgchain bootstrap -config config.json               # re-apply role grants
+//	sgchain serve     -config config.json               # REST API + explorer (mock or fisco ledger)
 package main
 
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -21,11 +22,15 @@ import (
 	"syscall"
 	"time"
 
-	"sellergraph/fisco/internal/api"
-	"sellergraph/fisco/internal/config"
-	"sellergraph/fisco/internal/ledger"
-	"sellergraph/fisco/internal/ledger/fisco"
-	"sellergraph/fisco/internal/ledger/mock"
+	"bouyup/fisco/internal/api"
+	"bouyup/fisco/internal/catalog"
+	"bouyup/fisco/internal/config"
+	"bouyup/fisco/internal/keystore"
+	"bouyup/fisco/internal/ledger"
+	"bouyup/fisco/internal/ledger/fisco"
+	"bouyup/fisco/internal/ledger/mock"
+	"bouyup/fisco/internal/payout"
+	"bouyup/fisco/internal/sealing"
 )
 
 func main() {
@@ -44,6 +49,8 @@ func main() {
 		err = deploy(args, false)
 	case "keygen":
 		err = keygen(args)
+	case "decrypt":
+		err = decryptCmd(args)
 	case "-h", "--help", "help":
 		usage()
 	default:
@@ -57,13 +64,14 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprint(os.Stderr, `sgchain — SellerGraph FISCO BCOS component
+	fmt.Fprint(os.Stderr, `sgchain — BouyUp FISCO BCOS component
 
 usage:
-  sgchain keygen    -out <dir> [-names admin,operator,officer,monitor]
+  sgchain keygen    -out <dir> [-names admin,operator]
   sgchain deploy    -config <config.json>
   sgchain bootstrap -config <config.json>
-  sgchain serve     -config <config.json>     (without -config: mock ledger, WeBank-only, :12080)
+  sgchain serve     -config <config.json>     (without -config: mock ledger, :12080)
+  sgchain decrypt   -server <url> -id <withdrawal id or tx hash> -key <private key hex>
 `)
 }
 
@@ -75,33 +83,25 @@ func loadConfig(fs *flag.FlagSet, args []string) (config.Config, error) {
 	return config.Load(*path)
 }
 
-// openLedger builds the configured ledger and the funder name -> address directory.
-func openLedger(ctx context.Context, cfg config.Config, log *slog.Logger) (ledger.Ledger, map[string]string, error) {
-	keys, err := cfg.LoadKeys(cfg.Ledger == "mock")
-	if err != nil {
-		return nil, nil, err
-	}
+// openLedger builds the configured ledger.
+func openLedger(ctx context.Context, cfg config.Config, keys fisco.Keys, log *slog.Logger) (ledger.Ledger, error) {
 	acc, err := fisco.AccountsOf(keys)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if cfg.Ledger == "mock" {
 		m := mock.New(acc)
-		if err := ledger.Bootstrap(ctx, m, acc, cfg.Policy); err != nil {
-			return nil, nil, err
+		if err := ledger.Bootstrap(ctx, m, acc); err != nil {
+			return nil, err
 		}
 		log.Warn("using the IN-MEMORY MOCK ledger: state is lost on restart (set \"ledger\": \"fisco\" for a real chain)")
-		return m, acc.Funders, nil
+		return m, nil
 	}
 	addrs, err := cfg.LoadAddresses()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	l, err := fisco.Dial(ctx, cfg.ResolvedNode(), addrs, keys)
-	if err != nil {
-		return nil, nil, err
-	}
-	return l, acc.Funders, nil
+	return fisco.Dial(ctx, cfg.ResolvedNode(), addrs, keys)
 }
 
 func serve(args []string) error {
@@ -110,27 +110,53 @@ func serve(args []string) error {
 	if err != nil {
 		return err
 	}
+	cat, err := catalog.Load(cfg.Path(cfg.CatalogDir))
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	l, funders, err := openLedger(ctx, cfg, log)
+	chainKeys, err := cfg.LoadKeys(cfg.Ledger == "mock")
+	if err != nil {
+		return err
+	}
+	l, err := openLedger(ctx, cfg, chainKeys, log)
 	if err != nil {
 		return err
 	}
 	defer l.Close()
 	salt := cfg.RefSalt
 	if salt == "" {
-		salt = "sellergraph-dev-salt-change-me"
+		salt = "bouyup-dev-salt-change-me"
 		log.Warn("refSalt not set: using a development salt")
 	}
-	if _, ok := funders[cfg.DefaultFunder]; !ok && cfg.DefaultFunder != "" {
-		return fmt.Errorf("defaultFunder %q has no key under keys.funders", cfg.DefaultFunder)
+	var codes []string
+	for _, b := range cat.Banks("") {
+		codes = append(codes, b.Code)
 	}
-	srv := &api.Server{Ledger: l, Salt: []byte(salt), Funders: funders, DefaultFunder: cfg.DefaultFunder, Token: cfg.APIToken, DisableDocs: cfg.DisableDocs, Log: log}
+	keys, err := keystore.Open(cfg.Path(cfg.BankKeysFile), codes, time.Now())
+	if err != nil {
+		return err
+	}
+	srv := &api.Server{Ledger: l, Catalog: cat, Payer: payout.Mock{}, Keys: keys, ShowDemoKeys: cfg.DemoKeysShown(),
+		ChainKeys: map[string]string{"admin": "0x" + hex.EncodeToString(chainKeys.Admin), "operator": "0x" + hex.EncodeToString(chainKeys.Operator)},
+		Salt:      []byte(salt), Token: cfg.APIToken, DisableDocs: cfg.DisableDocs, DisableExplorer: cfg.DisableExplorer, Log: log}
+	if srv.ShowDemoKeys {
+		log.Warn("showDemoKeys is on: GET /v1/overview prints every private key (demo only)", "keysFile", keys.Path())
+	}
 	info, err := l.Info(ctx)
 	if err != nil {
 		return err
 	}
-	log.Info("ledger ready", "backend", info.Backend, "block", info.BlockNumber, "contracts", info.Contracts, "funders", funders)
+	nodes, _ := l.Nodes(ctx)
+	online := 0
+	for _, n := range nodes {
+		if n.Online {
+			online++
+		}
+	}
+	log.Info("ledger ready", "backend", info.Backend, "block", info.BlockNumber, "contracts", info.Contracts,
+		"nodesOnline", fmt.Sprintf("%d/%d", online, len(nodes)), "banks", len(cat.Banks("")))
 
 	hs := &http.Server{Addr: cfg.Listen, Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
@@ -139,7 +165,7 @@ func serve(args []string) error {
 		defer cancel()
 		_ = hs.Shutdown(sctx)
 	}()
-	log.Info("listening", "addr", cfg.Listen, "docs", !cfg.DisableDocs)
+	log.Info("listening", "addr", cfg.Listen, "docs", !cfg.DisableDocs, "explorer", !cfg.DisableExplorer)
 	if err := hs.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
@@ -167,7 +193,7 @@ func deploy(args []string, fresh bool) error {
 		if err := cfg.SaveAddresses(addrs); err != nil {
 			return err
 		}
-		fmt.Printf("LoanLedger  %s\nAuditTrail  %s\nsaved to    %s\n", addrs.LoanLedger, addrs.AuditTrail, cfg.Path(cfg.ContractsFile))
+		fmt.Printf("WithdrawalLedger  %s\nAuditTrail        %s\nsaved to          %s\n", addrs.WithdrawalLedger, addrs.AuditTrail, cfg.Path(cfg.ContractsFile))
 	}
 	addrs, err := cfg.LoadAddresses()
 	if err != nil {
@@ -179,17 +205,17 @@ func deploy(args []string, fresh bool) error {
 	}
 	defer l.Close()
 	acc, _ := fisco.AccountsOf(keys)
-	if err := ledger.Bootstrap(ctx, l.Admin(), acc, cfg.Policy); err != nil {
+	if err := ledger.Bootstrap(ctx, l, acc); err != nil {
 		return err
 	}
-	fmt.Printf("roles granted: operator=%s officer=%s monitor=%s funders=%v\npolicy: %+v\n", acc.Operator, acc.Officer, acc.Monitor, acc.Funders, cfg.Policy)
+	fmt.Printf("roles granted: operator=%s (OPERATOR on WithdrawalLedger, AUDIT_WRITER on AuditTrail)\n", acc.Operator)
 	return nil
 }
 
 func keygen(args []string) error {
 	fs := flag.NewFlagSet("keygen", flag.ExitOnError)
 	out := fs.String("out", "keys", "output directory")
-	names := fs.String("names", "admin,operator,officer,monitor", "comma-separated key names")
+	names := fs.String("names", "admin,operator", "comma-separated key names")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -214,6 +240,53 @@ func keygen(args []string) error {
 		}
 		a, _ := fisco.AddressOf(k)
 		fmt.Printf("%-10s %s  -> %s\n", n, a, p)
+	}
+	return nil
+}
+
+// decryptCmd downloads the public on-chain record from a server's explorer and decrypts it locally: the key
+// never leaves this machine.
+func decryptCmd(args []string) error {
+	fs := flag.NewFlagSet("decrypt", flag.ExitOnError)
+	server := fs.String("server", "http://localhost:12080", "BouyUp server")
+	id := fs.String("id", "", "withdrawal id or transaction hash")
+	key := fs.String("key", "", "private key (hex)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *id == "" || *key == "" {
+		return fmt.Errorf("-id and -key are required")
+	}
+	resp, err := http.Get(strings.TrimRight(*server, "/") + "/explorer/api/withdrawals/" + *id)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("server answered %s", resp.Status)
+	}
+	var body struct {
+		Withdrawal struct {
+			WithdrawalID string          `json:"withdrawalId"`
+			Root         ledger.Hash     `json:"root"`
+			Commitments  []ledger.Hash   `json:"commitments"`
+			Envelope     json.RawMessage `json:"envelope"`
+		} `json:"withdrawal"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return err
+	}
+	w := body.Withdrawal
+	fmt.Printf("withdrawal %s: root matches commitments: %v\n", w.WithdrawalID, ledger.MerkleRoot(w.Commitments) == w.Root)
+	opened, err := sealing.Open(w.WithdrawalID, w.Envelope, *key, w.Commitments)
+	if err != nil {
+		return err
+	}
+	for _, o := range opened {
+		var pretty any
+		_ = json.Unmarshal(o.Plaintext, &pretty)
+		b, _ := json.MarshalIndent(pretty, "", "  ")
+		fmt.Printf("\npiece %d (matches on-chain commitment: %v)\n%s\n", o.Index, o.CommitmentOK, b)
 	}
 	return nil
 }

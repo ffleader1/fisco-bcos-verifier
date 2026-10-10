@@ -8,41 +8,38 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sellergraph/fisco/internal/ledger"
-	"sellergraph/fisco/internal/ledger/fisco"
+	"bouyup/fisco/internal/ledger/fisco"
 )
 
 // Keys are private keys given as 0x-hex, a path to a file holding hex, or a FISCO console PEM account file.
 type Keys struct {
-	Admin    string            `json:"admin"`
-	Operator string            `json:"operator"`
-	Officer  string            `json:"officer"`
-	Monitor  string            `json:"monitor"`
-	Funders  map[string]string `json:"funders"` // name -> key; a funder may reuse the operator key (WeBank-only mode)
+	Admin    string `json:"admin"`    // deploys contracts and grants roles
+	Operator string `json:"operator"` // the service: writes withdrawal records and audit anchors
 }
 
 type Config struct {
-	Listen        string           `json:"listen"`
-	APIToken      string           `json:"apiToken"`
-	DisableDocs   bool             `json:"disableDocs"` // hide the /docs/ API reference page
-	Ledger        string           `json:"ledger"` // "mock" | "fisco"
-	RefSalt       string           `json:"refSalt"`
-	DefaultFunder string           `json:"defaultFunder"`
-	Node          fisco.NodeConfig `json:"node"`
-	ContractsFile string           `json:"contractsFile"`
-	Keys          Keys             `json:"keys"`
-	Policy        ledger.Policy    `json:"policy"`
+	ShowDemoKeys    *bool            `json:"showDemoKeys"` // print full keys in GET /v1/overview (default true; demo only)
+	BankKeysFile    string           `json:"bankKeysFile"` // encryption keys: BouyUp master + one per bank (created on first start)
+	Listen          string           `json:"listen"`
+	APIToken        string           `json:"apiToken"`
+	DisableDocs     bool             `json:"disableDocs"`     // hide the /docs/ API reference page
+	DisableExplorer bool             `json:"disableExplorer"` // hide the public /explorer/ page
+	CatalogDir      string           `json:"catalogDir"`      // optional folder with regions.yaml + banks/*.yaml (default: built-in catalog)
+	Ledger          string           `json:"ledger"`          // "mock" | "fisco"
+	RefSalt         string           `json:"refSalt"`
+	Node            fisco.NodeConfig `json:"node"`
+	ContractsFile   string           `json:"contractsFile"`
+	Keys            Keys             `json:"keys"`
 
 	dir string
 }
 
-// Default returns a config that runs the mock ledger in WeBank-only mode.
+// Default returns a config that runs the mock ledger.
 func Default() Config {
 	return Config{
-		Listen: ":12080", Ledger: "mock", DefaultFunder: "webank", ContractsFile: "chain/contracts.json",
-		Node:   fisco.NodeConfig{NodeURL: "127.0.0.1:20200", GroupID: 1, ChainID: 1, CAFile: "chain/sdk/ca.crt", CertFile: "chain/sdk/sdk.crt", KeyFile: "chain/sdk/sdk.key"},
-		Policy: ledger.Policy{MaxRateBps: 2400, OfficerThreshold: 50_000_000, MaxFutureSkewSec: 300},
-		dir:    ".",
+		Listen: ":12080", Ledger: "mock", ContractsFile: "chain/contracts.json", BankKeysFile: "keys/bank-keys.json",
+		Node: fisco.NodeConfig{NodeURL: "127.0.0.1:20200", GroupID: 1, ChainID: 1, CAFile: "chain/sdk/ca.crt", CertFile: "chain/sdk/sdk.crt", KeyFile: "chain/sdk/sdk.key"},
+		dir:  ".",
 	}
 }
 
@@ -62,11 +59,21 @@ func Load(path string) (Config, error) {
 	for env, dst := range map[string]*string{
 		"SG_LISTEN": &c.Listen, "SG_API_TOKEN": &c.APIToken, "SG_LEDGER": &c.Ledger, "SG_REF_SALT": &c.RefSalt,
 		"SG_NODE_URL": &c.Node.NodeURL, "SG_CONTRACTS_FILE": &c.ContractsFile,
-		"SG_KEY_ADMIN": &c.Keys.Admin, "SG_KEY_OPERATOR": &c.Keys.Operator, "SG_KEY_OFFICER": &c.Keys.Officer, "SG_KEY_MONITOR": &c.Keys.Monitor,
+		"SG_KEY_ADMIN": &c.Keys.Admin, "SG_KEY_OPERATOR": &c.Keys.Operator, "SG_CATALOG_DIR": &c.CatalogDir,
 	} {
 		if v := os.Getenv(env); v != "" {
 			*dst = v
 		}
+	}
+	if v := os.Getenv("SG_BANK_KEYS_FILE"); v != "" {
+		c.BankKeysFile = v
+	}
+	if v := os.Getenv("SG_SHOW_DEMO_KEYS"); v != "" {
+		b := strings.EqualFold(v, "true") || v == "1"
+		c.ShowDemoKeys = &b
+	}
+	if v := os.Getenv("SG_NODE_PEERS"); v != "" {
+		c.Node.Peers = strings.Split(v, ",")
 	}
 	c.Ledger = strings.ToLower(c.Ledger)
 	if c.Ledger != "mock" && c.Ledger != "fisco" {
@@ -115,43 +122,28 @@ func isHex64(s string) bool {
 	return true
 }
 
-// LoadKeys parses every configured key. Missing keys are generated when generateMissing is true (mock only).
+// LoadKeys parses the configured keys. Missing keys are generated when generateMissing is true (mock only).
 func (c Config) LoadKeys(generateMissing bool) (fisco.Keys, error) {
 	var k fisco.Keys
-	var err error
-	one := func(name, v string) []byte {
+	for _, f := range []struct {
+		name, v string
+		dst     *[]byte
+	}{{"admin", c.Keys.Admin, &k.Admin}, {"operator", c.Keys.Operator, &k.Operator}} {
+		b, err := c.parseKey(f.v)
 		if err != nil {
-			return nil
-		}
-		b, e := c.parseKey(v)
-		if e != nil {
-			err = fmt.Errorf("key %s: %w", name, e)
-			return nil
+			return k, fmt.Errorf("key %s: %w", f.name, err)
 		}
 		if b == nil && generateMissing {
-			b, err = fisco.GenerateKey()
+			if b, err = fisco.GenerateKey(); err != nil {
+				return k, err
+			}
 		}
-		return b
+		*f.dst = b
 	}
-	k.Admin = one("admin", c.Keys.Admin)
-	k.Operator = one("operator", c.Keys.Operator)
-	k.Officer = one("officer", c.Keys.Officer)
-	k.Monitor = one("monitor", c.Keys.Monitor)
-	k.Funders = map[string][]byte{}
-	for n, v := range c.Keys.Funders {
-		if v == "operator" { // shorthand: funder signs with the operator key (WeBank-only mode)
-			k.Funders[n] = k.Operator
-			continue
-		}
-		k.Funders[n] = one("funder "+n, v)
+	if k.Admin == nil || k.Operator == nil {
+		return k, fmt.Errorf("keys.admin and keys.operator are required")
 	}
-	if len(k.Funders) == 0 && c.DefaultFunder != "" {
-		k.Funders[c.DefaultFunder] = k.Operator // WeBank-only default
-	}
-	if err == nil && (k.Admin == nil || k.Operator == nil || k.Officer == nil || k.Monitor == nil) {
-		err = fmt.Errorf("keys.admin, keys.operator, keys.officer and keys.monitor are required")
-	}
-	return k, err
+	return k, nil
 }
 
 // LoadAddresses reads the contracts file written by `sgchain deploy`.
@@ -173,3 +165,6 @@ func (c Config) SaveAddresses(a fisco.Addresses) error {
 	raw, _ := json.MarshalIndent(a, "", "  ")
 	return os.WriteFile(p, raw, 0o644)
 }
+
+// DemoKeysShown reports whether the overview prints full keys (default true).
+func (c Config) DemoKeysShown() bool { return c.ShowDemoKeys == nil || *c.ShowDemoKeys }

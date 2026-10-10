@@ -1,0 +1,145 @@
+# Mock profile for the BouyUp demo. Not the real policy or terms of Techcombank.
+code: TCB
+name: Techcombank
+localName: Ngân hàng TMCP Kỹ thương Việt Nam
+region: VN
+headquarters: VN-HN
+type: Private joint-stock commercial bank
+active: true
+profile: >-
+  Digital-first private bank focused on urban consumers and fast-growing small businesses. Moves quickly,
+  likes data, and is comfortable with growth stories when the numbers on the platform back them up.
+
+limits:
+  minWithdrawal: 1000000
+  maxWithdrawal: 3000000000
+  maxSharePercent: 60
+  dailyCap: 15000000000
+  reimbursementDays: 2
+  feePercent: 0.2
+  maxLoanAmount: 2000000000
+  minAnnualRatePercent: 9
+  maxAnnualRatePercent: 16
+  maxTenorDays: 120
+  minStoreAgeMonths: 12
+  minStoreRating: 4.3
+
+policy:
+  version: "2026.10-1"
+  updatedAt: "2026-10-01"
+  summary: >-
+    Techcombank backs e-commerce-native brands that grow fast and live on their data. It is relaxed about short
+    history if the shop's own numbers are strong and verifiable, and strict about anything that looks like
+    manufactured growth. It likes sellers who build a brand, not resellers competing only on price.
+  riskAppetite: >-
+    Moderate to high for urban, data-rich sellers; low for anything it cannot see in platform and bank data.
+  sectors:
+    prefer:
+      - name: Own-brand fashion and accessories
+        why: Higher margins and loyal customers; the bank's core urban audience.
+      - name: Beauty and personal care brands with registered products
+        why: Strong online demand; fine when every product has its notification (công bố) number.
+      - name: Home and lifestyle goods
+        why: Repeat buyers, steady demand, easy to ship.
+      - name: Consumer tech accessories
+        why: Fast turnover and clear supplier invoices.
+    cautious:
+      - name: Pure resellers of imported goods
+        why: Thin margins and price wars; acceptable for small amounts with clean import papers.
+      - name: Food and beverage brands
+        why: Fine with food-safety certificates; shelf life must fit the campaign.
+    avoid:
+      - name: Agricultural commodity trading (rice, coffee beans, rubber in bulk)
+        why: Commodity price swings; outside the bank's retail focus.
+      - name: Heavy industry and building materials
+        why: Long cash cycles that do not fit short campaign loans.
+      - name: Real-estate-related services
+        why: Excluded from this product by bank policy.
+    note: Brand strength matters more than category. Ask whether customers search for the shop by name.
+  regions:
+    prefer:
+      - code: VN-HCM
+        name: TP. Hồ Chí Minh
+        why: Largest e-commerce market and the bank's fastest-growing SME base.
+      - code: VN-HN
+        name: Hà Nội
+        why: Head office market; deep data on urban sellers.
+      - code: VN-DN
+        name: Đà Nẵng
+        why: Growing digital seller community; good logistics for national delivery.
+    cautious:
+      - code: VN-HP
+        name: Hải Phòng
+        why: Fine for consumer brands; many sellers there are B2B, which this product does not target.
+      - code: VN-KH
+        name: Khánh Hòa
+        why: Tourism-linked sellers have strong but very seasonal cash flow.
+    avoid:
+      - code: VN-AG
+        name: An Giang
+        why: Seller base is mostly agricultural; little data and no branch coverage for this product.
+    note: For provinces not listed, judge on data quality alone.
+  customers:
+    prefer:
+      - name: Founders under 40 running a single focused brand
+        why: The bank's target segment; usually digitally literate and responsive.
+      - name: Sellers with Techcombank business accounts receiving platform payouts
+        why: Payout flow is visible in real time.
+      - name: Shops with strong repeat-customer rates
+        why: Proof of brand rather than paid traffic.
+    cautious:
+      - name: Shops that rely on one platform for more than 90% of sales
+        why: A platform policy change could cut income overnight; ask about plans to diversify.
+      - name: Shops whose growth comes mainly from paid livestream campaigns
+        why: Check that the campaigns are profitable after fees and returns.
+    avoid:
+      - name: Sellers whose owners are already late on any Techcombank card or loan
+        why: Bank-wide policy.
+  useOfFunds:
+    - Inventory for a dated campaign (11.11, 12.12, Tết) bought from a named supplier.
+    - A limited share for packaging and logistics is acceptable when it is part of the supplier invoice.
+    - Not for advertising budgets alone.
+  positiveSignals:
+    - Repeat-customer rate above 30%.
+    - Store rating stable or improving over the last 6 months.
+    - Clear, consistent brand across platforms and social media.
+    - Payouts already landing in a Techcombank account.
+  redFlags:
+    - Growth that appears in one month and is not matched by customer reviews.
+    - Many orders from the same few buyer accounts.
+    - Product photos copied from other brands.
+    - Owner unable to name the supplier factory.
+  escalateWhen:
+    - Return rate above twice the category average.
+    - The seller requests more than three times last year's campaign revenue.
+  dealBreakers:
+    - Counterfeit or brand-infringing goods.
+    - Brushing or fake reviews confirmed by Agent 1.
+  reviewerNotes: >-
+    Techcombank is a good partner for the growth part of a split. If a seller is young but the data is clean,
+    giving Techcombank a larger share and the conservative banks a smaller one usually matches all policies.
+
+contract:
+  contractNo: BU-TCB-2026-01
+  title: Payment facilitation and reimbursement agreement
+  parties: [Techcombank, BouyUp]
+  status: active
+  effectiveFrom: "2026-01-01"
+  expiresOn: "2027-06-30"
+  creditLine: 60000000000
+  reimbursementTerms: >-
+    Techcombank reimburses its share within 2 business days after the withdrawal is recorded on chain,
+    through an automated daily settlement file.
+  feeTerms: BouyUp charges 0.20% of Techcombank's share, netted in the daily settlement.
+  evidenceTerms: >-
+    The FISCO BCOS withdrawal record is the evidence of payment. Techcombank runs its own observer node and
+    reconciles against it every day.
+  dataTerms: >-
+    Only salted references are shared on chain. Techcombank may ask BouyUp to resolve a reference for a
+    specific withdrawal under its KYC obligations.
+  governingLaw: Laws of Vietnam
+  disputeResolution: Vietnam International Arbitration Centre (VIAC), TP. Hồ Chí Minh
+  termination: 10 business days' notice; reimbursements for recorded withdrawals survive termination.
+  keyClauses:
+    - Daily automated settlement; any withdrawal missing from the settlement file is flagged within 1 business day.
+    - Techcombank may cap its share for a single seller at 1,000,000,000 VND outstanding.

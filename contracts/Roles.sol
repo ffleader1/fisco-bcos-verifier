@@ -1,21 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.6.10;
 
-/// @title Roles — minimal bitmask role registry shared by SellerGraph contracts.
-/// @notice Role separation mirrors the SellerGraph operating model:
-///         - OPERATOR : the fixed-code orchestrator (backend). Never an AI agent acting on its own authority.
-///         - OFFICER  : a human WeBank credit officer (sign-off above threshold, acceleration, default, restructuring).
-///         - MONITOR  : post-disbursement monitoring service (Agent 5 pipeline) — can raise alerts, cannot accelerate.
-///         - FUNDER   : a lender account that must confirm its funding share (WeBank by default; N funders supported).
-///         - AUDIT_WRITER : may anchor hashes of ML / agent / approval artefacts.
-/// @dev Revert strings start with a stable code (E_UNAUTHORIZED, E_NOT_FOUND, E_BAD_STATUS, E_INVALID, E_DUPLICATE)
-///      that the Go service maps to HTTP status codes.
+/// @title Roles — minimal bitmask role registry shared by BouyUp contracts.
+/// @notice - ADMIN        : deploys the contracts and grants roles.
+///         - OPERATOR     : the BouyUp service key. Writes withdrawal records (WithdrawalLedger).
+///         - AUDIT_WRITER : may anchor hashes of agent / algorithm / human artefacts (AuditTrail).
+///         Who actually triggered a withdrawal (Agent 4 or a human) is recorded in the withdrawal itself;
+///         the chain only accepts writes signed by the service.
+/// @dev Revert strings start with a stable code (E_UNAUTHORIZED, E_NOT_FOUND, E_INVALID, E_DUPLICATE)
+///      that the Go service maps to HTTP status codes. Bit values are kept stable across versions.
 contract Roles {
     uint256 public constant ROLE_ADMIN = 1;
     uint256 public constant ROLE_OPERATOR = 2;
-    uint256 public constant ROLE_OFFICER = 4;
-    uint256 public constant ROLE_MONITOR = 8;
-    uint256 public constant ROLE_FUNDER = 16;
     uint256 public constant ROLE_AUDIT_WRITER = 32;
 
     mapping(address => uint256) public roles;

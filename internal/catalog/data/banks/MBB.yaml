@@ -1,0 +1,119 @@
+# Mock profile for the BouyUp demo. Not the real policy or terms of MB Bank.
+code: MBB
+name: MB Bank
+localName: Ngân hàng TMCP Quân đội
+region: VN
+headquarters: VN-HN
+type: Joint-stock commercial bank
+active: true
+profile: >-
+  Fast-moving bank with a very large digital customer base. Strong appetite for micro and small merchants on
+  social commerce (TikTok Shop, Shopee, Facebook) and very strict on fraud.
+
+limits:
+  minWithdrawal: 500000
+  maxWithdrawal: 1500000000
+  maxSharePercent: 50
+  dailyCap: 8000000000
+  reimbursementDays: 1
+  feePercent: 0.25
+  maxLoanAmount: 1000000000
+  minAnnualRatePercent: 10
+  maxAnnualRatePercent: 18
+  maxTenorDays: 90
+  minStoreAgeMonths: 6
+  minStoreRating: 4.2
+
+policy:
+  version: "2026.10-1"
+  updatedAt: "2026-10-01"
+  summary: >-
+    MB Bank likes many small tickets to small online merchants, including young shops, provided the data is
+    honest. It reimburses fastest of all banks and is happy to take small shares of many withdrawals. Its line is
+    fraud: any sign of fake orders, mule accounts or identity tricks is a hard stop.
+  riskAppetite: >-
+    High for small amounts with clean data; zero tolerance for fraud indicators.
+  sectors:
+    prefer:
+      - name: Social-commerce fashion and accessories
+        why: The bank's largest merchant segment; it has good benchmarks for returns and seasonality.
+      - name: Phone accessories and small gadgets
+        why: Fast turnover and low ticket size.
+      - name: Snacks and packaged food brands
+        why: Repeat purchases; fine with food-safety certificates.
+    cautious:
+      - name: Cosmetics sold through livestreams
+        why: Check product registration; livestream claims are often exaggerated.
+      - name: Pre-order businesses
+        why: The seller collects money before buying stock; check refund history.
+    avoid:
+      - name: High-value electronics (laptops, phones) resale
+        why: Large tickets attract fraud and grey imports.
+      - name: Gold, jewellery and luxury watches
+        why: Fraud and money-laundering exposure.
+    note: Small and frequent is the bank's sweet spot. Large one-off campaigns belong with other banks.
+  regions:
+    prefer:
+      - code: VN-HN
+        name: Hà Nội
+        why: Biggest MB Bank merchant base.
+      - code: VN-HCM
+        name: TP. Hồ Chí Minh
+        why: Large social-commerce seller community.
+      - code: VN-DN
+        name: Đà Nẵng
+        why: Good digital adoption and reliable logistics.
+    cautious:
+      - code: VN-QNI
+        name: Quảng Ninh
+        why: Border trade; check that imported goods have customs declarations.
+    avoid: []
+    note: Location matters little compared with data quality.
+  customers:
+    prefer:
+      - name: Merchants already using the MB Bank app for collections
+        why: Full visibility of incoming payments.
+      - name: Shops with steady daily orders rather than a few big spikes
+        why: Smooth cash flow fits short tenors.
+    cautious:
+      - name: Shops younger than 6 months
+        why: Possible only for small amounts with very clean data.
+    avoid:
+      - name: Accounts linked to any previous fraud report
+        why: Zero tolerance.
+  useOfFunds:
+    - Stock for a campaign within the next 60 days.
+    - Small amounts for packaging when included in the supplier invoice.
+  positiveSignals:
+    - Daily payouts landing in an MB Bank account.
+    - Low cancellation rate on cash-on-delivery orders.
+  redFlags:
+    - Buyer accounts created on the same day as their orders.
+    - Many orders delivered to the same few addresses.
+    - The receiving account was opened very recently or belongs to a different person than the shop owner.
+  escalateWhen:
+    - Any mismatch between the shop owner's identity and the receiving account holder.
+  dealBreakers:
+    - Confirmed fake orders, mule accounts or identity fraud.
+  reviewerNotes: >-
+    Use MB Bank for small shares of small withdrawals. When the amount is large, keep its share under its
+    maxSharePercent and give the rest to banks with larger tickets.
+
+contract:
+  contractNo: BU-MBB-2026-01
+  title: Payment facilitation and reimbursement agreement
+  parties: [MB Bank, BouyUp]
+  status: active
+  effectiveFrom: "2026-01-15"
+  expiresOn: "2027-01-14"
+  creditLine: 30000000000
+  reimbursementTerms: MB Bank reimburses its share by the next business day.
+  feeTerms: 0.25% of MB Bank's share, netted in the reimbursement.
+  evidenceTerms: The on-chain withdrawal record is the evidence of payment.
+  dataTerms: Salted references only; fraud alerts may be shared under a separate data-sharing addendum.
+  governingLaw: Laws of Vietnam
+  disputeResolution: Vietnam International Arbitration Centre (VIAC), Hà Nội
+  termination: 5 business days' notice; immediate suspension allowed on suspected fraud.
+  keyClauses:
+    - MB Bank may suspend its participation immediately if fraud is suspected on a withdrawal it funded.
+    - Next-day reimbursement applies only to withdrawals recorded before 17:00 Vietnam time.

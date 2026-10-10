@@ -4,34 +4,56 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
-	"sellergraph/fisco/internal/api"
-	"sellergraph/fisco/internal/ledger"
-	"sellergraph/fisco/internal/ledger/mock"
+	"bouyup/fisco/internal/api"
+	"bouyup/fisco/internal/catalog"
+	"bouyup/fisco/internal/keystore"
+	"bouyup/fisco/internal/ledger"
+	"bouyup/fisco/internal/ledger/mock"
+	"bouyup/fisco/internal/payout"
 )
 
-const t0 = int64(1_790_000_000)
+var testNow = time.Date(2026, 10, 10, 9, 0, 0, 0, time.UTC)
 
-func newServer(t *testing.T, token string) (*httptest.Server, *int64) {
+func newServer(t *testing.T, token string, opts ...func(*api.Server)) *httptest.Server {
 	t.Helper()
-	now := t0
-	acc := ledger.Accounts{Admin: "0x00000000000000000000000000000000000000a1", Operator: "0x00000000000000000000000000000000000000b2",
-		Officer: "0x00000000000000000000000000000000000000c3", Monitor: "0x00000000000000000000000000000000000000d4",
-		Funders: map[string]string{"webank": "0x00000000000000000000000000000000000000b2", "vcb": "0x00000000000000000000000000000000000000e5"}}
-	m := mock.New(acc, mock.WithClock(func() int64 { return now }))
-	if err := ledger.Bootstrap(context.Background(), m, acc, ledger.Policy{MaxRateBps: 2400, OfficerThreshold: 50_000_000, MaxFutureSkewSec: 300}); err != nil {
+	acc := ledger.Accounts{Admin: "0x00000000000000000000000000000000000000a1", Operator: "0x00000000000000000000000000000000000000b2"}
+	m := mock.New(acc, mock.WithClock(func() int64 { return testNow.Unix() }))
+	if err := ledger.Bootstrap(context.Background(), m, acc); err != nil {
 		t.Fatal(err)
 	}
-	s := &api.Server{Ledger: m, Salt: []byte("test-salt-0123456789"), Funders: acc.Funders, DefaultFunder: "webank", Token: token}
+	cat, err := catalog.Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := func() time.Time { return testNow }
+	var codes []string
+	for _, b := range cat.Banks("") {
+		codes = append(codes, b.Code)
+	}
+	keys, err := keystore.Open("", codes, testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testKeys = keys
+	s := &api.Server{Ledger: m, Catalog: cat, Payer: payout.Mock{Now: now}, Keys: keys, ShowDemoKeys: true,
+		ChainKeys: map[string]string{"admin": "0xaa", "operator": "0xbb"}, Salt: []byte("test-salt-0123456789"), Token: token, Now: now}
+	for _, o := range opts {
+		o(s)
+	}
 	ts := httptest.NewServer(s.Handler())
 	t.Cleanup(ts.Close)
-	return ts, &now
+	return ts
 }
+
+// testKeys is the key store of the last server created (tests run one server at a time).
+var testKeys *keystore.Store
 
 type client struct {
 	t     *testing.T
@@ -69,149 +91,369 @@ func (c client) ok(method, path string, body any, want int) map[string]any {
 	return out
 }
 
-func loanField(out map[string]any, k string) any { return out["loan"].(map[string]any)[k] }
+// errKind asserts an error response.
+func (c client) errKind(method, path string, body any, wantCode int, wantKind string) map[string]any {
+	c.t.Helper()
+	code, out := c.do(method, path, body)
+	e, _ := out["error"].(map[string]any)
+	if code != wantCode || e == nil || e["kind"] != wantKind {
+		c.t.Fatalf("%s %s: got %d %v, want %d %s", method, path, code, out, wantCode, wantKind)
+	}
+	return e
+}
 
-func TestEndToEndFlow(t *testing.T) {
-	ts, now := newServer(t, "secret")
-	c := client{t: t, base: ts.URL, token: "secret"}
+func agent4() map[string]any {
+	return map[string]any{"type": "agent", "agentId": "agent-4", "name": "Disbursement & Collection", "version": "4.2.0", "model": "claude-opus-5-5", "runId": "run-1"}
+}
 
-	// auth
-	if code, _ := (client{t: t, base: ts.URL}).do("GET", "/v1/loans", nil); code != 401 {
-		t.Fatalf("expected 401 without token, got %d", code)
-	}
-	c.ok("GET", "/healthz", nil, 200)
-
-	decision := map[string]any{"doc": map[string]any{
-		"pd": 0.031, "segment": "N1", "limitCeiling": 12000000, "rateBps": 1200, "sweepRateBps": 4300,
-		"agent2Memo": "memo-hash-abc", "agent3Challenge": "challenge-hash-def", "checks": []string{"price_deviation_ok", "supplier_checks_4_of_4"}},
-		"uri": "s3://webank-sg/decisions/LN-2026-0001.json"}
-	out := c.ok("POST", "/v1/loans", map[string]any{
-		"loanId": "LN-2026-0001", "sellerId": "seller-douyin-778899", "tier": 2, "principal": 10000000,
-		"annualRateBps": 1200, "tenorDays": 120, "sweepRateBps": 4300, "sweepCapBps": 6300, "graceDays": 20, "decision": decision,
-	}, 201)
-	if loanField(out, "status") != "approved" || out["decisionAnchor"] == nil {
-		t.Fatalf("create: %v", out)
-	}
-	if f := loanField(out, "funding").([]any)[0].(map[string]any); f["name"] != "webank" || f["confirmed"] != true {
-		t.Fatalf("funding view: %v", f)
-	}
-	// retry with the same decision -> loan duplicate (decision anchor duplicate is tolerated)
-	code, e := c.do("POST", "/v1/loans", map[string]any{"loanId": "LN-2026-0001", "sellerId": "x", "tier": 2, "principal": 10000000,
-		"annualRateBps": 1200, "tenorDays": 120, "sweepRateBps": 4300, "sweepCapBps": 6300, "graceDays": 20, "decision": decision})
-	if code != 409 || e["error"].(map[string]any)["kind"] != "duplicate" {
-		t.Fatalf("expected 409 duplicate, got %d %v", code, e)
-	}
-
-	// legacy alias from the architecture diagram
-	out = c.ok("POST", "/blockchain/disburse", map[string]any{"loanId": "LN-2026-0001", "bankTxRef": "WB202610040001", "deliveryDays": 10,
-		"payments": []map[string]any{{"supplierId": "91310000MA1FL0001X", "amount": 6000000}, {"supplierId": "91440300MA5F00002Y", "amount": 4000000}}}, 200)
-	if loanField(out, "status") != "active" {
-		t.Fatalf("disburse: %v", out)
-	}
-
-	*now += 22 * 86400
-	out = c.ok("POST", "/v1/loans/LN-2026-0001/repayments", map[string]any{"amount": 2150000, "source": "proportional_sweep",
-		"extRef": "SWEEP-0001", "notice": map[string]any{"text": "43% of payout 5,000,000 swept"}}, 200)
-	alloc := out["allocation"].(map[string]any)
-	// 10,000,000 * 12% * 22/365 = 72,328.7 -> 72,328
-	if alloc["toInterest"].(float64) != 72328 || alloc["toPrincipal"].(float64) != 2150000-72328 {
-		t.Fatalf("allocation %v", alloc)
-	}
-	code, e = c.do("POST", "/repayment", map[string]any{"loanId": "LN-2026-0001", "amount": 1, "extRef": "SWEEP-0001"})
-	if code != 409 {
-		t.Fatalf("idempotency: %d %v", code, e)
-	}
-
-	out = c.ok("POST", "/v1/loans/LN-2026-0001/floor-checkpoints", map[string]any{"floorCumulative": 3000000}, 200)
-	if out["shortfall"].(float64) != 850000 || loanField(out, "alertLevel") != "yellow" {
-		t.Fatalf("floor: %v", out)
-	}
-	out = c.ok("POST", "/v1/loans/LN-2026-0001/deliveries", map[string]any{"line": 0, "waybillNo": "SF1234567890", "shippedAt": t0 + 3*86400}, 200)
-	if out["onTime"] != true {
-		t.Fatalf("delivery: %v", out)
-	}
-	c.ok("POST", "/v1/loans/LN-2026-0001/deliveries/1/missing", map[string]any{}, 200)
-	out = c.ok("GET", "/v1/loans/LN-2026-0001", nil, 200)
-	if out["alertLevel"] != "red" {
-		t.Fatalf("expected red after missing delivery: %v", out["alertLevel"])
-	}
-	c.ok("POST", "/v1/loans/LN-2026-0001/alerts", map[string]any{"level": "yellow", "code": "SALES_DROP_SEASONAL",
-		"evidence": map[string]any{"doc": map[string]any{"agent": 5, "cause": "seasonal"}}}, 200)
-
-	pay := c.ok("GET", fmt.Sprintf("/v1/loans/LN-2026-0001/payoff?asOf=%d", *now+60), nil, 200)
-	if pay["total"].(float64) <= 0 {
-		t.Fatalf("payoff %v", pay)
-	}
-	out = c.ok("POST", "/v1/loans/LN-2026-0001/repayments", map[string]any{"amount": pay["total"], "source": "prepayment", "extRef": "PREPAY-1", "asOf": *now + 60}, 200)
-	if out["settled"] != true || loanField(out, "status") != "settled" {
-		t.Fatalf("prepayment should settle: %v", out)
-	}
-
-	// officer gate on a large tier-2 loan, multi-funder
-	c.ok("POST", "/v1/loans", map[string]any{"loanId": "LN-2026-0002", "sellerId": "seller-2", "tier": 2, "principal": 60000000,
-		"annualRateBps": 1000, "tenorDays": 150, "sweepRateBps": 3000, "sweepCapBps": 6000, "graceDays": 30, "decision": map[string]any{"text": "pkg-2"},
-		"funding": []map[string]any{{"funder": "webank", "amount": 40000000}, {"funder": "vcb", "amount": 20000000}}}, 201)
-	code, _ = c.do("POST", "/v1/loans/LN-2026-0002/disburse", map[string]any{"bankTxRef": "X", "payments": []map[string]any{{"supplierId": "s", "amount": 60000000}}})
-	if code != 409 {
-		t.Fatalf("disbursement before sign-off must be 409, got %d", code)
-	}
-	c.ok("POST", "/v1/loans/LN-2026-0002/funding/confirm", map[string]any{"funder": "vcb"}, 200)
-	out = c.ok("POST", "/v1/loans/LN-2026-0002/officer-decision", map[string]any{"approved": true,
-		"review": map[string]any{"doc": map[string]any{"officer": "credit-officer-17", "anomaliesConfirmed": []string{"price +12% vs 3m"}}}}, 200)
-	if loanField(out, "status") != "approved" || out["reviewAnchor"] == nil {
-		t.Fatalf("officer approval: %v", out)
-	}
-
-	pf := c.ok("GET", "/portfolio", nil, 200)
-	if pf["loans"].(float64) != 2 || pf["byStatus"].(map[string]any)["settled"].(float64) != 1 {
-		t.Fatalf("portfolio %v", pf)
-	}
-	fe := pf["funderExposure"].(map[string]any)["vcb"].(map[string]any)
-	if fe["committed"].(float64) != 20000000 {
-		t.Fatalf("vcb exposure %v", fe)
-	}
-
-	// audit trail: verify chain and content
-	out = c.ok("GET", "/v1/audit/anchors/LN-2026-0001/verify", nil, 200)
-	if out["valid"] != true || out["records"].(float64) != 2 {
-		t.Fatalf("verify chain: %v", out)
-	}
-	out = c.ok("POST", "/v1/audit/verify", map[string]any{"content": decision}, 200)
-	if out["found"] != true || out["record"].(map[string]any)["kind"] != "decision_package" {
-		t.Fatalf("verify content: %v", out)
-	}
-	tampered := map[string]any{"doc": map[string]any{"pd": 0.01}}
-	out = c.ok("POST", "/v1/audit/verify", map[string]any{"content": tampered}, 200)
-	if out["found"] != false {
-		t.Fatalf("tampered doc must not verify")
-	}
-	c.ok("POST", "/v1/audit/anchors", map[string]any{"subject": "APP-77", "kind": "ml_output", "content": map[string]any{"doc": map[string]any{"pd": 0.2}}}, 201)
-	list := c.ok("GET", "/v1/audit/anchors/APP-77", nil, 200)
-	if len(list["records"].([]any)) != 1 {
-		t.Fatalf("anchors: %v", list)
+func vnWithdrawal() map[string]any {
+	return map[string]any{
+		"userId": "U-778899", "accountNo": "0071000123456", "amount": 500000000, "region": "VN", "province": "VN-HN",
+		"bankSplit": map[string]any{"VCB": 60, "BIDV": 25.5, "TCB": 14.5}, "actor": agent4(),
 	}
 }
 
-func TestErrorMapping(t *testing.T) {
-	ts, _ := newServer(t, "")
-	c := client{t: t, base: ts.URL}
-	cases := []struct {
-		method, path string
-		body         any
-		code         int
-	}{
-		{"GET", "/v1/loans/NOPE", nil, 404},
-		{"GET", "/v1/loans/bad%20id", nil, 400},
-		{"POST", "/v1/loans", map[string]any{"loanId": "A", "sellerId": "s", "tier": 1, "principal": 100, "annualRateBps": 9999,
-			"tenorDays": 30, "sweepRateBps": 1, "sweepCapBps": 2, "decision": map[string]any{"text": "d"}}, 400},
-		{"POST", "/v1/loans", map[string]any{"loanId": "A", "tier": 1}, 400},
-		{"POST", "/v1/loans", map[string]any{"unknownField": 1}, 400},
-		{"POST", "/v1/loans/A/repayments", map[string]any{"amount": 1, "source": "bogus", "extRef": "x"}, 400},
-		{"POST", "/repayment", map[string]any{"amount": 1}, 400},
+func with(base map[string]any, kv ...any) map[string]any {
+	out := map[string]any{}
+	for k, v := range base {
+		out[k] = v
 	}
-	for _, cs := range cases {
-		if code, out := c.do(cs.method, cs.path, cs.body); code != cs.code {
-			t.Errorf("%s %s: got %d want %d (%v)", cs.method, cs.path, code, cs.code, out)
+	for i := 0; i+1 < len(kv); i += 2 {
+		out[kv[i].(string)] = kv[i+1]
+	}
+	return out
+}
+
+func legs(out map[string]any) []map[string]any {
+	var l []map[string]any
+	for _, x := range out["legs"].([]any) {
+		l = append(l, x.(map[string]any))
+	}
+	return l
+}
+
+func TestWithdrawalFlow(t *testing.T) {
+	ts := newServer(t, "secret")
+	c := client{t: t, base: ts.URL, token: "secret"}
+	if code, _ := (client{t: t, base: ts.URL}).do("POST", "/v1/withdrawals", vnWithdrawal()); code != 401 {
+		t.Fatalf("expected 401 without token, got %d", code)
+	}
+
+	out := c.ok("POST", "/v1/withdrawals", vnWithdrawal(), 201)
+	id := out["withdrawalId"].(string)
+	if !strings.HasPrefix(id, "WD-") || out["status"] != "paid_out" || out["currency"] != "VND" || out["provinceName"] != "Hà Nội" {
+		t.Fatalf("withdrawal: %v", out)
+	}
+	l := legs(out)
+	if len(l) != 3 || l[0]["bank"] != "VCB" || l[0]["amount"].(float64) != 300000000 || l[1]["bank"] != "BIDV" || l[1]["amount"].(float64) != 127500000 ||
+		l[1]["ratioBps"].(float64) != 2550 || l[2]["amount"].(float64) != 72500000 || l[0]["reimbursement"] != "pending" || l[0]["contractNo"] != "BU-VCB-2026-01" {
+		t.Fatalf("legs: %v", l)
+	}
+	if strings.Contains(toJSON(out), "0071000123456") || strings.Contains(toJSON(out), "U-778899") {
+		t.Fatal("the account number must not appear in the record")
+	}
+	chain := out["chain"].(map[string]any)
+	tx := chain["txHash"].(string)
+	if !strings.HasPrefix(tx, "0x") || chain["blockNumber"].(float64) <= 0 || chain["confirmedNodes"].(float64) != 1 || chain["totalNodes"].(float64) != 1 ||
+		chain["contract"] == "" || chain["explorerUrl"] != "/explorer/#/tx/"+tx {
+		t.Fatalf("chain: %v", chain)
+	}
+	actor := out["actor"].(map[string]any)
+	if actor["type"] != "agent" || actor["agentId"] != "agent-4" || actor["version"] != "4.2.0" || out["actorRequest"].(map[string]any)["runId"] != "run-1" {
+		t.Fatalf("actor: %v", actor)
+	}
+	oc := out["onChain"].(map[string]any)
+	if oc["pieces"].(float64) != 4 || oc["slots"].(float64) != 4 || len(oc["commitments"].([]any)) != 4 || !strings.HasPrefix(oc["root"].(string), "0x") {
+		t.Fatalf("onChain: %v", oc)
+	}
+	if out["payout"].(map[string]any)["provider"] != "mock-treasury" || out["payoutRef"] != "MOCKPAY-"+strings.TrimPrefix(id, "WD-") {
+		t.Fatalf("payout: %v", out)
+	}
+
+	// read back by id and by transaction hash
+	got := c.ok("GET", "/v1/withdrawals/"+id, nil, 200)
+	if got["onChain"].(map[string]any)["root"] != oc["root"] || got["actorRequest"] != nil || got["amount"].(float64) != 500000000 || len(legs(got)) != 3 {
+		t.Fatalf("get: %v", got)
+	}
+	if byTx := c.ok("GET", "/v1/withdrawals/"+tx, nil, 200); byTx["withdrawalId"] != id {
+		t.Fatalf("by tx: %v", byTx)
+	}
+	v := c.ok("GET", "/v1/withdrawals/"+id+"/verify", nil, 200)
+	if v["valid"] != true || len(v["checks"].([]any)) != 8 {
+		t.Fatalf("verify: %v", v)
+	}
+	list := c.ok("GET", "/v1/withdrawals?limit=5", nil, 200)
+	if list["total"].(float64) != 1 || len(list["items"].([]any)) != 1 {
+		t.Fatalf("list: %v", list)
+	}
+	c.errKind("GET", "/v1/withdrawals/WD-NOPE", nil, 404, "not_found")
+}
+
+func toJSON(v any) string { b, _ := json.Marshal(v); return string(b) }
+
+func TestWithdrawalHumanCN(t *testing.T) {
+	c := client{t: t, base: newServer(t, "").URL}
+	human := map[string]any{"type": "human", "staffId": "CO-17", "role": "credit_officer", "department": "SME Lending Ops",
+		"reason": "Manual payout: agent run failed after approval", "approvalRef": "TICKET-4471"}
+	out := c.ok("POST", "/v1/withdrawals", map[string]any{"userId": "U-1", "accountNo": "6222020200112233", "amount": 13990000,
+		"currency": "CNY", "region": "CN", "province": "CN-GD", "bankSplit": map[string]any{"WEBANK": 100}, "actor": human}, 201)
+	a := out["actor"].(map[string]any)
+	if a["type"] != "human" || a["role"] != "credit_officer" || !strings.HasPrefix(a["staffRef"].(string), "0x") || strings.Contains(toJSON(a["staffRef"]), "CO-17") {
+		t.Fatalf("human actor: %v", a)
+	}
+	if l := legs(out); len(l) != 1 || l[0]["amount"].(float64) != 13990000 {
+		t.Fatalf("legs: %v", l)
+	}
+	// human actors need a reason
+	h2 := with(human, "reason", "")
+	c.errKind("POST", "/v1/withdrawals", with(vnWithdrawal(), "actor", h2), 400, "invalid_actor")
+}
+
+func TestWithdrawalValidation(t *testing.T) {
+	c := client{t: t, base: newServer(t, "").URL}
+	base := vnWithdrawal()
+	split := func(kv ...any) map[string]any {
+		m := map[string]any{}
+		for i := 0; i+1 < len(kv); i += 2 {
+			m[kv[i].(string)] = kv[i+1]
+		}
+		return with(base, "bankSplit", m)
+	}
+	e := c.errKind("POST", "/v1/withdrawals", split("VCB", 60, "TCB", 30), 400, "invalid_bank_ratio")
+	if !strings.Contains(e["message"].(string), "90.00%") || e["details"].(map[string]any)["sumPercent"] != "90.00" {
+		t.Fatalf("sum message: %v", e)
+	}
+	c.errKind("POST", "/v1/withdrawals", split("VCB", 60, "TCB", 40.01), 400, "invalid_bank_ratio")
+	e = c.errKind("POST", "/v1/withdrawals", split("VCB", 66.667, "TCB", 33.333), 400, "invalid_bank_ratio")
+	if !strings.Contains(e["message"].(string), "more than 2 decimals") {
+		t.Fatalf("decimals message: %v", e)
+	}
+	c.errKind("POST", "/v1/withdrawals", split("VCB", 100, "TCB", 0), 400, "invalid_bank_ratio")
+	c.errKind("POST", "/v1/withdrawals", split("VCB", 110, "TCB", -10), 400, "invalid_bank_ratio")
+	c.errKind("POST", "/v1/withdrawals", split("VCB", "abc"), 400, "invalid")
+	c.errKind("POST", "/v1/withdrawals", with(base, "bankSplit", map[string]any{}), 400, "invalid_bank_ratio")
+	c.errKind("POST", "/v1/withdrawals", split("VCB", 50, "XYZ", 50), 400, "unknown_bank")
+	c.errKind("POST", "/v1/withdrawals", split("VCB", 50, "ICBC", 50), 400, "bank_region_mismatch")
+	c.errKind("POST", "/v1/withdrawals", with(base, "province", "CN-GD"), 400, "unknown_province")
+	c.errKind("POST", "/v1/withdrawals", with(base, "region", "TH"), 400, "unknown_region")
+	c.errKind("POST", "/v1/withdrawals", with(base, "currency", "CNY"), 400, "currency_mismatch")
+	c.errKind("POST", "/v1/withdrawals", with(base, "amount", 0), 400, "invalid_amount")
+	c.errKind("POST", "/v1/withdrawals", with(base, "accountNo", ""), 400, "invalid")
+	c.errKind("POST", "/v1/withdrawals", with(base, "actor", nil), 400, "invalid_actor")
+	c.errKind("POST", "/v1/withdrawals", with(base, "actor", with(agent4(), "agentId", "agent-3")), 403, "actor_not_allowed")
+	c.errKind("POST", "/v1/withdrawals", with(base, "actor", with(agent4(), "version", "")), 400, "invalid_actor")
+	c.errKind("POST", "/v1/withdrawals", with(base, "actor", map[string]any{"type": "robot"}), 400, "invalid")
+	c.errKind("POST", "/v1/withdrawals", with(base, "amount", 1, "bankSplit", map[string]any{"VCB": 50, "TCB": 50}), 400, "amount_too_small")
+	c.errKind("POST", "/v1/withdrawals", with(base, "surprise", true), 400, "invalid")
+
+	// rounding: the remainder goes to the largest share, the legs always add up
+	out := c.ok("POST", "/v1/withdrawals", with(base, "amount", 100, "bankSplit", map[string]any{"VCB": 33.33, "TCB": 33.33, "BIDV": 33.34}), 201)
+	l := legs(out)
+	if l[0]["bank"] != "BIDV" || l[0]["amount"].(float64) != 34 || l[1]["amount"].(float64) != 33 || l[2]["amount"].(float64) != 33 {
+		t.Fatalf("rounding: %v", l)
+	}
+	// decimals given as strings and integers given as 60.00 are fine
+	c.ok("POST", "/v1/withdrawals", with(base, "bankSplit", map[string]any{"vcb": "60.00", "TCB": "40"}), 201)
+}
+
+func TestWithdrawalIdempotency(t *testing.T) {
+	c := client{t: t, base: newServer(t, "").URL}
+	req := with(vnWithdrawal(), "requestId", "agent4-req-0001")
+	first := c.ok("POST", "/v1/withdrawals", req, 201)
+	again := c.ok("POST", "/v1/withdrawals", req, 200)
+	if again["withdrawalId"] != first["withdrawalId"] || again["replayed"] != true || again["chain"].(map[string]any)["txHash"] != first["chain"].(map[string]any)["txHash"] {
+		t.Fatalf("replay: %v", again)
+	}
+	e := c.errKind("POST", "/v1/withdrawals", with(req, "amount", 1000), 409, "duplicate_request")
+	if e["details"].(map[string]any)["withdrawalId"] != first["withdrawalId"] {
+		t.Fatalf("conflict details: %v", e)
+	}
+	if list := c.ok("GET", "/v1/withdrawals", nil, 200); list["total"].(float64) != 1 {
+		t.Fatalf("a replay must not record twice: %v", list)
+	}
+}
+
+func TestBanksAndRegions(t *testing.T) {
+	c := client{t: t, base: newServer(t, "").URL}
+	regs := c.ok("GET", "/v1/regions", nil, 200)["regions"].([]any)
+	if len(regs) != 2 {
+		t.Fatalf("regions: %v", regs)
+	}
+	vn := c.ok("GET", "/v1/banks?region=VN", nil, 200)["banks"].([]any)
+	if len(vn) != 5 || vn[0].(map[string]any)["contractStatus"] != "active" {
+		t.Fatalf("VN banks: %v", vn)
+	}
+	c.errKind("GET", "/v1/banks?region=XX", nil, 400, "unknown_region")
+	all := c.ok("GET", "/v1/banks", nil, 200)["banks"].([]any)
+	if len(all) != 10 {
+		t.Fatalf("all banks: %d", len(all))
+	}
+	b := c.ok("GET", "/v1/banks/vcb", nil, 200)
+	pol := b["policy"].(map[string]any)
+	if b["code"] != "VCB" || b["mock"] != true || b["currency"] != "VND" || pol["summary"] == "" || !strings.HasPrefix(pol["hash"].(string), "0x") ||
+		b["limits"].(map[string]any)["maxSharePercent"].(float64) != 70 || b["contract"].(map[string]any)["contractNo"] != "BU-VCB-2026-01" {
+		t.Fatalf("bank: %v", b)
+	}
+	p := c.ok("GET", "/v1/banks/AGRI/policy", nil, 200)
+	if p["policy"].(map[string]any)["sectors"].(map[string]any)["prefer"] == nil || p["disclaimer"] == "" {
+		t.Fatalf("policy: %v", p)
+	}
+	k := c.ok("GET", "/v1/banks/WEBANK/contract", nil, 200)
+	if k["contractStatus"] != "active" || k["contract"].(map[string]any)["disputeResolution"] != "Guangzhou Arbitration Commission" {
+		t.Fatalf("contract: %v", k)
+	}
+	c.errKind("GET", "/v1/banks/NOPE", nil, 404, "unknown_bank")
+}
+
+func TestAuditTrail(t *testing.T) {
+	c := client{t: t, base: newServer(t, "").URL}
+	doc := map[string]any{"grade": "C", "limit": 139900, "rateBps": 1200}
+	rec := c.ok("POST", "/v1/audit/anchors", map[string]any{"subject": "APP-2026-0001", "kind": "algorithm_output", "content": map[string]any{"doc": doc}}, 201)
+	if rec["kind"] != "algorithm_output" || rec["index"].(float64) != 0 {
+		t.Fatalf("anchor: %v", rec)
+	}
+	c.ok("POST", "/v1/audit/anchors", map[string]any{"subject": "APP-2026-0001", "kind": "ml_output", "contentHash": "0x" + strings.Repeat("ab", 32)}, 201)
+	c.errKind("POST", "/v1/audit/anchors", map[string]any{"subject": "APP-2026-0001", "kind": "algorithm_output", "content": map[string]any{"doc": doc}}, 409, "duplicate")
+	if v := c.ok("GET", "/v1/audit/anchors/APP-2026-0001/verify", nil, 200); v["valid"] != true || v["records"].(float64) != 2 {
+		t.Fatalf("verify chain: %v", v)
+	}
+	found := c.ok("POST", "/v1/audit/verify", map[string]any{"content": map[string]any{"doc": map[string]any{"rateBps": 1200, "limit": 139900, "grade": "C"}}}, 200)
+	if found["found"] != true {
+		t.Fatalf("verify content: %v", found)
+	}
+}
+
+func TestExplorerIsPublic(t *testing.T) {
+	ts := newServer(t, "secret")
+	c := client{t: t, base: ts.URL, token: "secret"}
+	out := c.ok("POST", "/v1/withdrawals", vnWithdrawal(), 201)
+	tx := out["chain"].(map[string]any)["txHash"].(string)
+	id := out["withdrawalId"].(string)
+
+	pub := client{t: t, base: ts.URL}
+	ov := pub.ok("GET", "/explorer/api/overview", nil, 200)
+	if ov["totalWithdrawals"].(float64) != 1 || len(ov["nodes"].([]any)) != 1 || len(ov["latestBlocks"].([]any)) == 0 {
+		t.Fatalf("overview: %v", ov)
+	}
+	// The public view holds nothing readable: no amount, bank or account.
+	d := pub.ok("GET", "/explorer/api/tx/"+tx, nil, 200)
+	pubText := toJSON(d)
+	for _, leak := range []string{"500000000", "VCB", "Vietcombank", "agent-4", "VN-HN", out["accountRef"].(string)} {
+		if strings.Contains(pubText, leak) {
+			t.Fatalf("public explorer leaks %q", leak)
+		}
+	}
+	if d["withdrawal"].(map[string]any)["withdrawalId"] != id || d["verification"].(map[string]any)["valid"] != true {
+		t.Fatalf("tx: %v", d)
+	}
+	pub.ok("GET", "/explorer/api/withdrawals/"+id, nil, 200)
+	bn := int(d["transaction"].(map[string]any)["blockNumber"].(float64))
+	pub.ok("GET", "/explorer/api/blocks/"+itoa(bn), nil, 200)
+	for q, want := range map[string]string{tx: "tx", id: "withdrawal", strings.ToLower(id): "withdrawal", itoa(bn): "block"} {
+		if s := pub.ok("GET", "/explorer/api/search?q="+q, nil, 200); s["type"] != want {
+			t.Fatalf("search %s: %v", q, s)
+		}
+	}
+	pub.errKind("GET", "/explorer/api/search?q=nothing", nil, 404, "not_found")
+	for path, want := range map[string]string{"/explorer/": "BouyUp Chain Explorer", "/explorer/decrypt_withdrawal.py": "X25519PrivateKey",
+		"/overview/": "BouyUp Chain Overview"} {
+		resp, err := http.Get(ts.URL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if resp.StatusCode != 200 || !strings.Contains(string(body), want) {
+			t.Fatalf("%s: %d", path, resp.StatusCode)
 		}
 	}
 }
+
+func pieceKinds(d map[string]any) []string {
+	var out []string
+	for _, p := range d["readable"].([]any) {
+		pm := p.(map[string]any)
+		if pm["commitmentMatches"] != true {
+			panic("commitment mismatch")
+		}
+		k := pm["kind"].(string)
+		if k == "bank_share" {
+			k = pm["content"].(map[string]any)["bank"].(string)
+		}
+		out = append(out, k)
+	}
+	return out
+}
+
+// Each key reads exactly its part: a bank the summary + its own share, the master key everything, an outsider nothing.
+func TestDecryptPerKey(t *testing.T) {
+	ts := newServer(t, "")
+	c := client{t: t, base: ts.URL}
+	id := c.ok("POST", "/v1/withdrawals", vnWithdrawal(), 201)["withdrawalId"].(string)
+	priv := func(code string) string { k, _ := testKeys.Bank(code); return k.PrivateKey }
+	dec := func(key string) map[string]any {
+		return c.ok("POST", "/explorer/api/decrypt", map[string]any{"withdrawalId": id, "privateKey": key}, 200)
+	}
+	if got := strings.Join(pieceKinds(dec(priv("VCB"))), ","); got != "summary,VCB" {
+		t.Fatalf("VCB reads %s", got)
+	}
+	if got := strings.Join(pieceKinds(dec(priv("TCB"))), ","); got != "summary,TCB" {
+		t.Fatalf("TCB reads %s", got)
+	}
+	if got := pieceKinds(dec(testKeys.MasterPrivate())); len(got) != 4 {
+		t.Fatalf("master reads %v", got)
+	}
+	c.errKind("POST", "/explorer/api/decrypt", map[string]any{"withdrawalId": id, "privateKey": priv("AGRI")}, 403, "no_access")
+	c.errKind("POST", "/explorer/api/decrypt", map[string]any{"withdrawalId": id, "privateKey": "zz"}, 400, "invalid_key")
+
+	// A bank changes its key: new withdrawals use the new key, the old one still opens the old withdrawal.
+	oldKey := priv("VCB")
+	fresh, err := sealingNewKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := c.ok("PUT", "/v1/banks/VCB/public-key", map[string]any{"publicKey": fresh.Public}, 200)
+	if r["encryptionKey"].(map[string]any)["publicKey"] != fresh.Public {
+		t.Fatalf("key change: %v", r)
+	}
+	id2 := c.ok("POST", "/v1/withdrawals", vnWithdrawal(), 201)["withdrawalId"].(string)
+	if got := strings.Join(pieceKinds(c.ok("POST", "/explorer/api/decrypt", map[string]any{"withdrawalId": id2, "privateKey": fresh.Private}, 200)), ","); got != "summary,VCB" {
+		t.Fatalf("new key on new withdrawal: %s", got)
+	}
+	c.errKind("POST", "/explorer/api/decrypt", map[string]any{"withdrawalId": id2, "privateKey": oldKey}, 403, "no_access")
+	if got := strings.Join(pieceKinds(dec(oldKey)), ","); got != "summary,VCB" {
+		t.Fatalf("old key on old withdrawal: %s", got)
+	}
+	c.errKind("PUT", "/v1/banks/VCB/public-key", map[string]any{"publicKey": "nothex"}, 400, "invalid_key")
+}
+
+func TestOverview(t *testing.T) {
+	ts := newServer(t, "")
+	c := client{t: t, base: ts.URL}
+	c.ok("POST", "/v1/withdrawals", vnWithdrawal(), 201)
+	o := c.ok("GET", "/v1/overview", nil, 200)
+	if o["demoKeysShown"] != true || len(o["sections"].([]any)) < 5 {
+		t.Fatalf("overview: %v", o)
+	}
+	secrets := toJSON(o["secrets"])
+	if !strings.Contains(secrets, testKeys.MasterPrivate()) || !strings.Contains(secrets, "BouyUp master key") {
+		t.Fatal("the master key must be listed when showDemoKeys is on")
+	}
+	ex := o["decodeExample"].(map[string]any)
+	if ex["available"] != true || ex["bankSees"] == nil || !strings.Contains(ex["curl"].(string), "/explorer/api/decrypt") {
+		t.Fatalf("example: %v", ex)
+	}
+	resp, err := http.Get(ts.URL + "/v1/overview?format=markdown")
+	if err != nil {
+		t.Fatal(err)
+	}
+	md, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	for _, want := range []string{"# BouyUp", "## Security", "## Secrets", "## How to decrypt", "X25519", "Merkle", "PBFT"} {
+		if !strings.Contains(string(md), want) {
+			t.Fatalf("markdown overview misses %q", want)
+		}
+	}
+}
+
+func itoa(n int) string { b, _ := json.Marshal(n); return string(b) }

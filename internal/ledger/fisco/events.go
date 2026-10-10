@@ -9,19 +9,19 @@ import (
 	"github.com/FISCO-BCOS/go-sdk/core/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	"sellergraph/fisco/internal/ledger"
+	"bouyup/fisco/internal/ledger"
 )
 
-// decodeLog decodes a receipt log emitted by either contract into a ledger.Event with JSON-friendly values,
-// using the same conventions as the mock: loanId/subject/code as ASCII, other bytes32 as 0x-hex, addresses
-// lowercase hex, integers as int64, uint256[N] as []int64.
-func decodeLog(loanABI, auditABI abi.ABI, lg *types.NewLog) (ledger.Event, bool) {
+// decodeLog decodes a receipt log emitted by one of the contracts into a ledger.Event with JSON-friendly values,
+// using the same conventions as the mock: ids and codes as ASCII, other bytes32 as 0x-hex, addresses
+// lowercase hex, integers as int64.
+func decodeLog(lg *types.NewLog, abis ...abi.ABI) (ledger.Event, bool) {
 	if lg == nil || len(lg.Topics) == 0 {
 		return ledger.Event{}, false
 	}
 	topic0 := common.HexToHash(lg.Topics[0])
 	var ev *abi.Event
-	for _, a := range []abi.ABI{loanABI, auditABI} {
+	for _, a := range abis {
 		for _, e := range a.Events {
 			if e.ID() == topic0 {
 				ev = e
@@ -76,7 +76,7 @@ func normalize(name string, v any) any {
 		return strings.ToLower(x.Hex())
 	case [32]byte:
 		switch name {
-		case "loanId", "subject", "code":
+		case "withdrawalId", "subject", "code", "currency", "region", "province", "actorId", "bank":
 			return ledger.Bytes32ToID(ledger.Hash(x))
 		}
 		return ledger.Hash(x).Hex()

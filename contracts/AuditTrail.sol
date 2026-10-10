@@ -3,22 +3,23 @@ pragma solidity ^0.6.10;
 
 import "./Roles.sol";
 
-/// @title AuditTrail — hash anchoring for ML outputs, agent I/O, memos, human decisions and explanations (F18).
+/// @title AuditTrail — hash anchoring for algorithm outputs, agent I/O, proposals, control reviews, human decisions
+///        and explanations (used by Agents 1, 2, 3 and 5 and the approval gate).
 /// @notice Only hashes go on chain; documents stay in WeBank storage. Each subject (application / loan id) keeps a
 ///         hash chain: head_n = keccak256(head_{n-1} || kind || contentHash || timestamp), so deleting or reordering
 ///         any off-chain record is detectable.
 contract AuditTrail is Roles {
     // kinds
     uint8 public constant K_APPLICATION = 1; // submitted file set / extracted fields
-    uint8 public constant K_ML_OUTPUT = 2; // PD, segment, limit ceiling, rate, sweep rate, factors
+    uint8 public constant K_ALGORITHM_OUTPUT = 2; // algorithm core ticket: limits, rate, grade, sweep rate, reasons
     uint8 public constant K_AGENT_IO = 3; // full prompt/response trace of an agent step
-    uint8 public constant K_CREDIT_MEMO = 4; // Agent 2 memo
-    uint8 public constant K_RISK_CHALLENGE = 5; // Agent 3 independent challenge
-    uint8 public constant K_HUMAN_DECISION = 6; // officer sign-off / review
+    uint8 public constant K_CREDIT_MEMO = 4; // Agent 2 proposal
+    uint8 public constant K_RISK_CHALLENGE = 5; // Agent 3 control review (phase 1 seal and final conclusion)
+    uint8 public constant K_HUMAN_DECISION = 6; // WeBank officer decision
     uint8 public constant K_OFFER_CONTRACT = 7; // offer + loan contract accepted by the seller
     uint8 public constant K_EXPLANATION = 8; // Art. 24 PIPL explanation sent to the seller
     uint8 public constant K_SWEEP_NOTICE = 9; // per-debit explanation notice
-    uint8 public constant K_DECISION_PACKAGE = 10; // full approval package whose hash is LoanLedger.decisionHash
+    uint8 public constant K_DECISION_PACKAGE = 10; // full approval package (approval gate output)
     uint8 public constant K_OTHER = 11;
 
     struct Record {

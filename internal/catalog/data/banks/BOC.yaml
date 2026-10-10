@@ -1,0 +1,120 @@
+# Mock profile for the BouyUp demo. Not the real policy or terms of Bank of China.
+code: BOC
+name: Bank of China
+localName: 中国银行
+region: CN
+headquarters: CN-BJ
+type: Large state-owned commercial bank
+active: true
+profile: >-
+  China's most international bank, strong in foreign exchange and trade finance. The natural partner for
+  cross-border e-commerce sellers and export manufacturers.
+
+limits:
+  minWithdrawal: 200000
+  maxWithdrawal: 200000000
+  maxSharePercent: 70
+  dailyCap: 2000000000
+  reimbursementDays: 3
+  feePercent: 0.1
+  maxLoanAmount: 100000000
+  minAnnualRatePercent: 4.5
+  maxAnnualRatePercent: 11
+  maxTenorDays: 180
+  minStoreAgeMonths: 18
+  minStoreRating: 4.4
+
+policy:
+  version: "2026.10-1"
+  updatedAt: "2026-10-01"
+  summary: >-
+    Bank of China backs sellers who sell abroad: Amazon, TikTok Shop overseas, Shopee, Lazada, AliExpress and
+    Temu suppliers, and export manufacturers. It understands foreign-currency payouts and longer shipping times.
+    It is careful about destination countries and product compliance abroad.
+  riskAppetite: >-
+    Moderate for cross-border sellers with clean customs records; low for domestic-only sellers.
+  sectors:
+    prefer:
+      - name: Cross-border e-commerce sellers
+        why: Core strategic segment; foreign-currency income flows through the bank.
+      - name: Export manufacturers of consumer goods
+        why: Long trade-finance experience with these clients.
+      - name: Small commodities for export (Yiwu)
+        why: Well-known supply chain with high volumes.
+    cautious:
+      - name: Domestic-only sellers
+        why: Fine, but other banks usually offer them better terms.
+      - name: Battery-powered and electrical goods for export
+        why: Must meet destination safety standards (CE, FCC, UKCA); recalls are costly.
+    avoid:
+      - name: Dual-use goods and anything subject to export control
+        why: Compliance risk.
+      - name: Goods infringing foreign trademarks
+        why: Platform account bans can freeze income.
+    note: Ask where the goods are going. The destination often matters more than the product.
+  regions:
+    prefer:
+      - code: CN-ZJ
+        name: Zhejiang
+        why: Yiwu and Ningbo export hubs.
+      - code: CN-GD
+        name: Guangdong
+        why: Shenzhen cross-border seller cluster.
+      - code: CN-FJ
+        name: Fujian
+        why: Footwear and apparel exporters around Xiamen and Quanzhou.
+    cautious:
+      - code: CN-YN
+        name: Yunnan
+        why: Border trade with Southeast Asia; check customs records and destination.
+      - code: CN-HA
+        name: Henan
+        why: Wig exporters around Xuchang are welcome with clean customs records.
+    avoid: []
+    note: Coastal export hubs are preferred; inland sellers are fine with clean customs history.
+  customers:
+    prefer:
+      - name: Sellers with overseas platform payouts collected into a Bank of China account
+        why: Income visible to the bank.
+      - name: Companies with export licences and customs registration
+        why: Paperwork exists for every shipment.
+    cautious:
+      - name: Sellers depending on a single overseas platform account
+        why: Account suspension risk; ask about backup stores.
+    avoid:
+      - name: Sellers with platform account bans in the last 12 months
+        why: Indicates compliance problems.
+  useOfFunds:
+    - Stock and freight for export campaigns (Black Friday, Prime Day, Christmas).
+    - Payment directly to manufacturers and freight forwarders.
+  positiveSignals:
+    - Several overseas marketplaces with consistent ratings.
+    - Product certifications for destination markets.
+  redFlags:
+    - Destination countries under sanctions or high-risk lists.
+    - Shipping volumes that do not match platform sales.
+  escalateWhen:
+    - Destination or end-user cannot be identified.
+  dealBreakers:
+    - Shipments to sanctioned parties or destinations.
+  reviewerNotes: >-
+    For cross-border sellers, Bank of China should usually take the largest share. For domestic-only sellers,
+    leave it out or keep it small.
+
+contract:
+  contractNo: BU-BOC-2026-01
+  title: Payment facilitation and reimbursement agreement
+  parties: [Bank of China, BouyUp]
+  status: active
+  effectiveFrom: "2026-01-01"
+  expiresOn: "2027-12-31"
+  creditLine: 8000000000
+  reimbursementTerms: Bank of China reimburses its share within 3 business days of the on-chain record.
+  feeTerms: 0.10% of Bank of China's share.
+  evidenceTerms: The on-chain withdrawal record is the evidence of payment.
+  dataTerms: Salted references only; processing follows the PRC Personal Information Protection Law.
+  governingLaw: Laws of the People's Republic of China
+  disputeResolution: China International Economic and Trade Arbitration Commission (CIETAC), Beijing
+  termination: 30 days' notice.
+  keyClauses:
+    - BouyUp confirms that no withdrawal funded by Bank of China pays a sanctioned party.

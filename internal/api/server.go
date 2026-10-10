@@ -1,33 +1,43 @@
-// Package api exposes the SellerGraph blockchain component as a JSON REST API for the orchestrator
-// (fixed-code workflow engine), the officer console, the monitoring service and the dashboards.
+// Package api exposes the BouyUp blockchain component as a JSON REST API: encrypted withdrawals (Agent 4 or a
+// human), the demo bank catalog (regions, bank policies for Agent 3, bank contracts, encryption keys), the
+// audit trail used by the other agents, a public read-only explorer of the chain and an overview for the team.
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
-	"sellergraph/fisco/internal/hashing"
-	"sellergraph/fisco/internal/ledger"
+	"bouyup/fisco/internal/catalog"
+	"bouyup/fisco/internal/keystore"
+	"bouyup/fisco/internal/ledger"
+	"bouyup/fisco/internal/payout"
 )
 
 // Server holds the dependencies of the HTTP handlers.
 type Server struct {
-	Ledger        ledger.Ledger
-	Salt          []byte            // HMAC salt for seller / supplier references
-	Funders       map[string]string // funder name -> address
-	DefaultFunder string
-	Token         string // optional bearer token
-	DisableDocs   bool   // hide /docs/ and /openapi.json
-	Log           *slog.Logger
+	Ledger          ledger.Ledger
+	Catalog         *catalog.Catalog
+	Payer           payout.Payer
+	Keys            *keystore.Store   // master + bank encryption keys
+	ShowDemoKeys    bool              // print the full keys in GET /v1/overview (demo only)
+	ChainKeys       map[string]string // chain signing keys by role (admin, operator), hex — listed in the overview's secrets
+	Salt            []byte            // HMAC salt for account / staff references
+	Token           string            // optional bearer token for /v1 (docs, explorer and /healthz stay public)
+	AllowedAgents   []string
+	DisableDocs     bool // hide /docs/ and /openapi.json
+	DisableExplorer bool // hide /explorer/
+	Now             func() time.Time
+	Log             *slog.Logger
 }
+
+// DefaultAllowedAgents are the agents that may ask for a withdrawal (Agent 4: disbursement & collection).
+var DefaultAllowedAgents = []string{"agent-4"}
 
 // Route is one API endpoint (used by Handler and by the OpenAPI consistency test).
 type Route struct {
@@ -35,42 +45,39 @@ type Route struct {
 	Handler         http.HandlerFunc
 }
 
-// Routes lists every API endpoint.
+// Routes lists every JSON endpoint.
 func (s *Server) Routes() []Route {
 	return []Route{
 		{"GET", "/healthz", s.health},
 		{"GET", "/v1/chain", s.chainInfo},
+		{"GET", "/v1/overview", s.overview},
 
-		{"POST", "/v1/loans", s.createLoan},
-		{"GET", "/v1/loans", s.listLoans},
-		{"GET", "/v1/loans/{id}", s.getLoan},
-		{"GET", "/v1/loans/{id}/payoff", s.payoff},
-		{"POST", "/v1/loans/{id}/funding/confirm", s.confirmFunding},
-		{"POST", "/v1/loans/{id}/officer-decision", s.officerDecision},
-		{"POST", "/v1/loans/{id}/cancel", s.cancel},
-		{"POST", "/v1/loans/{id}/disburse", s.disburse},
-		{"POST", "/v1/loans/{id}/repayments", s.repay},
-		{"POST", "/v1/loans/{id}/floor-checkpoints", s.floor},
-		{"POST", "/v1/loans/{id}/mature", s.mature},
-		{"POST", "/v1/loans/{id}/accelerate", s.accelerate},
-		{"POST", "/v1/loans/{id}/default", s.markDefault},
-		{"POST", "/v1/loans/{id}/restructure", s.restructure},
-		{"POST", "/v1/loans/{id}/alerts", s.alert},
-		{"POST", "/v1/loans/{id}/covenant-events", s.covenant},
-		{"POST", "/v1/loans/{id}/deliveries", s.delivery},
-		{"POST", "/v1/loans/{id}/deliveries/{line}/missing", s.missingDelivery},
-		{"GET", "/v1/portfolio", s.portfolio},
+		{"POST", "/v1/withdrawals", s.createWithdrawal},
+		{"GET", "/v1/withdrawals", s.listWithdrawals},
+		{"GET", "/v1/withdrawals/{id}", s.getWithdrawal},
+		{"GET", "/v1/withdrawals/{id}/verify", s.verifyWithdrawal},
+		{"POST", "/v1/demo/withdrawals", s.demoWithdrawal},
+
+		{"GET", "/v1/regions", s.listRegions},
+		{"GET", "/v1/banks", s.listBanks},
+		{"GET", "/v1/banks/{code}", s.getBank},
+		{"GET", "/v1/banks/{code}/policy", s.getBankPolicy},
+		{"GET", "/v1/banks/{code}/contract", s.getBankContract},
+		{"PUT", "/v1/banks/{code}/public-key", s.putBankKey},
 
 		{"POST", "/v1/audit/anchors", s.anchor},
 		{"GET", "/v1/audit/anchors/{subject}", s.listAnchors},
 		{"GET", "/v1/audit/anchors/{subject}/verify", s.verifyChain},
 		{"POST", "/v1/audit/verify", s.verifyContent},
 
-		// Aliases matching the endpoint names of the PoC architecture diagram (page 02).
-		{"POST", "/blockchain/create-loan", s.createLoan},
-		{"POST", "/blockchain/disburse", s.withBodyLoanID(s.disburse)},
-		{"POST", "/repayment", s.withBodyLoanID(s.repay)},
-		{"GET", "/portfolio", s.portfolio},
+		{"GET", "/explorer/api/overview", s.exOverview},
+		{"GET", "/explorer/api/blocks", s.exBlocks},
+		{"GET", "/explorer/api/blocks/{number}", s.exBlock},
+		{"GET", "/explorer/api/tx/{hash}", s.exTx},
+		{"GET", "/explorer/api/withdrawals", s.exWithdrawals},
+		{"GET", "/explorer/api/withdrawals/{id}", s.exWithdrawal},
+		{"GET", "/explorer/api/search", s.exSearch},
+		{"POST", "/explorer/api/decrypt", s.decrypt},
 	}
 }
 
@@ -78,28 +85,58 @@ func (s *Server) Routes() []Route {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	for _, rt := range s.Routes() {
+		if s.DisableExplorer && strings.HasPrefix(rt.Pattern, "/explorer/") {
+			continue
+		}
 		mux.HandleFunc(rt.Method+" "+rt.Pattern, rt.Handler)
 	}
 	if !s.DisableDocs {
 		mux.Handle("GET /docs/", docsHandler())
-		mux.HandleFunc("GET /docs", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Location", "docs/") // relative: keeps a reverse-proxy sub-path intact
-			w.WriteHeader(http.StatusMovedPermanently)
-		})
+		mux.HandleFunc("GET /docs", redirect("docs/"))
 		mux.HandleFunc("GET /openapi.json", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write(OpenAPISpec())
 		})
 	}
+	mux.HandleFunc("GET /overview/{$}", overviewPage)
+	mux.HandleFunc("GET /overview", redirect("overview/"))
+	mux.HandleFunc("GET /{$}", redirect("overview/"))
+	if !s.DisableExplorer {
+		mux.HandleFunc("GET /explorer/{$}", explorerPage)
+		mux.HandleFunc("GET /explorer/decrypt_withdrawal.py", decryptScriptFile)
+		mux.HandleFunc("GET /explorer", redirect("explorer/"))
+	}
 	return s.logging(s.auth(mux))
+}
+
+// redirect answers with a relative Location, which keeps a reverse-proxy sub-path intact.
+func redirect(to string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Location", to)
+		w.WriteHeader(http.StatusMovedPermanently)
+	}
+}
+
+func (s *Server) now() time.Time {
+	if s.Now != nil {
+		return s.Now()
+	}
+	return time.Now()
 }
 
 // ---------------------------------------------------------------- middleware
 
+// isPublicPath reports whether a path needs no API token: health, docs, the read-only explorer and the
+// overview page shell (the secrets it shows come from /v1/overview, which keeps the token check).
+func isPublicPath(p string) bool {
+	return p == "/" || p == "/healthz" || isDocsPath(p) || p == "/explorer" || strings.HasPrefix(p, "/explorer/") ||
+		p == "/overview" || p == "/overview/"
+}
+
 func (s *Server) auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.Token != "" && r.URL.Path != "/healthz" && !isDocsPath(r.URL.Path) && r.Header.Get("Authorization") != "Bearer "+s.Token {
-			writeErr(w, http.StatusUnauthorized, "unauthenticated", "missing or invalid bearer token")
+		if s.Token != "" && !isPublicPath(r.URL.Path) && r.Header.Get("Authorization") != "Bearer "+s.Token {
+			writeErr(w, http.StatusUnauthorized, "unauthenticated", "missing or invalid bearer token", nil)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -124,29 +161,29 @@ func (s *Server) logging(next http.Handler) http.Handler {
 	})
 }
 
-// withBodyLoanID adapts the legacy endpoints that carry loanId in the body.
-func (s *Server) withBodyLoanID(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		raw, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
-		if err != nil {
-			writeErr(w, 400, "invalid", err.Error())
-			return
-		}
-		var probe struct {
-			LoanID string `json:"loanId"`
-		}
-		_ = json.Unmarshal(raw, &probe)
-		if probe.LoanID == "" {
-			writeErr(w, 400, "invalid", "loanId is required")
-			return
-		}
-		r.SetPathValue("id", probe.LoanID)
-		r.Body = io.NopCloser(strings.NewReader(string(raw)))
-		h(w, r)
-	}
+// ---------------------------------------------------------------- errors & helpers
+
+// apiError is an error with an HTTP status and a stable kind, e.g. invalid_bank_ratio.
+type apiError struct {
+	Status  int
+	Kind    string
+	Message string
+	Details map[string]any
 }
 
-// ---------------------------------------------------------------- helpers
+func (e *apiError) Error() string { return e.Kind + ": " + e.Message }
+
+func errf(status int, kind, format string, args ...any) *apiError {
+	return &apiError{Status: status, Kind: kind, Message: fmt.Sprintf(format, args...)}
+}
+
+func (e *apiError) with(k string, v any) *apiError {
+	if e.Details == nil {
+		e.Details = map[string]any{}
+	}
+	e.Details[k] = v
+	return e
+}
 
 func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.Header().Set("Content-Type", "application/json")
@@ -156,14 +193,23 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	_ = enc.Encode(v)
 }
 
-func writeErr(w http.ResponseWriter, code int, kind, msg string) {
-	writeJSON(w, code, map[string]any{"error": map[string]string{"kind": kind, "message": msg}})
+func writeErr(w http.ResponseWriter, code int, kind, msg string, details map[string]any) {
+	body := map[string]any{"kind": kind, "message": msg}
+	if len(details) > 0 {
+		body["details"] = details
+	}
+	writeJSON(w, code, map[string]any{"error": body})
 }
 
 func (s *Server) fail(w http.ResponseWriter, err error) {
+	var ae *apiError
+	if errors.As(err, &ae) {
+		writeErr(w, ae.Status, ae.Kind, ae.Message, ae.Details)
+		return
+	}
 	var le *ledger.Error
 	if !errors.As(err, &le) {
-		writeErr(w, http.StatusBadRequest, "invalid", err.Error())
+		writeErr(w, http.StatusBadRequest, "invalid", err.Error(), nil)
 		return
 	}
 	code := map[ledger.ErrorKind]int{
@@ -176,104 +222,19 @@ func (s *Server) fail(w http.ResponseWriter, err error) {
 	if code >= 500 && s.Log != nil {
 		s.Log.Error("ledger error", "err", err)
 	}
-	writeErr(w, code, string(le.Kind), le.Message)
+	writeErr(w, code, string(le.Kind), le.Message, nil)
 }
 
 func decode(r *http.Request, v any) error {
 	dec := json.NewDecoder(io.LimitReader(r.Body, 1<<20))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(v); err != nil && err != io.EOF {
-		return fmt.Errorf("invalid JSON body: %w", err)
+		return errf(400, "invalid", "invalid JSON body: %v", err)
 	}
 	return nil
 }
 
-// Time accepts RFC3339 strings or unix seconds.
-type Time struct {
-	Unix int64
-	Set  bool
-}
-
-func (t *Time) UnmarshalJSON(b []byte) error {
-	s := strings.Trim(string(b), `"`)
-	if s == "" || s == "null" {
-		return nil
-	}
-	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
-		t.Unix, t.Set = n, true
-		return nil
-	}
-	tm, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return fmt.Errorf("time must be RFC3339 or unix seconds: %q", s)
-	}
-	t.Unix, t.Set = tm.Unix(), true
-	return nil
-}
-
-func (s *Server) asOf(ctx context.Context, t Time) (int64, error) {
-	if t.Set {
-		return t.Unix, nil
-	}
-	return s.Ledger.Now(ctx)
-}
-
-// Doc lets callers supply either a JSON document (hashed canonically and anchored in the AuditTrail),
-// a precomputed hash, or a free-text value (hashed, not anchored).
+// Doc wraps a JSON document that is hashed canonically (sorted keys, SHA-256).
 type Doc struct {
-	Doc  json.RawMessage `json:"doc,omitempty"`
-	Hash string          `json:"hash,omitempty"`
-	Text string          `json:"text,omitempty"`
-	URI  string          `json:"uri,omitempty"`
-}
-
-func (d *Doc) empty() bool { return d == nil || (len(d.Doc) == 0 && d.Hash == "" && d.Text == "") }
-
-// resolve returns the bytes32 for d, anchoring d.Doc under subject with the given kind.
-// A document already anchored for this subject (client retry) is accepted.
-func (s *Server) resolve(ctx context.Context, d *Doc, subject string, kind ledger.AnchorKind) (ledger.Hash, *ledger.AnchorRecord, error) {
-	switch {
-	case d == nil || d.empty():
-		return ledger.ZeroHash, nil, nil
-	case len(d.Doc) > 0:
-		h, err := hashing.Content(d.Doc)
-		if err != nil {
-			return h, nil, ledger.Errorf(ledger.KindInvalid, "%v", err)
-		}
-		rec, err := s.Ledger.Anchor(ctx, ledger.AnchorRequest{Subject: subject, Kind: kind, ContentHash: h, URI: d.URI})
-		if err != nil {
-			if ledger.KindOf(err) == ledger.KindDuplicate {
-				return h, nil, nil
-			}
-			return h, nil, err
-		}
-		return h, &rec, nil
-	case d.Hash != "":
-		h, err := ledger.ParseHash(d.Hash)
-		if err != nil {
-			return h, nil, ledger.Errorf(ledger.KindInvalid, "%v", err)
-		}
-		return h, nil, nil
-	default:
-		return hashing.Text(d.Text), nil, nil
-	}
-}
-
-func (s *Server) funderAddr(nameOrAddr string) (string, error) {
-	if strings.HasPrefix(nameOrAddr, "0x") && len(nameOrAddr) == 42 {
-		return strings.ToLower(nameOrAddr), nil
-	}
-	if a, ok := s.Funders[nameOrAddr]; ok {
-		return a, nil
-	}
-	return "", ledger.Errorf(ledger.KindInvalid, "unknown funder %q", nameOrAddr)
-}
-
-func (s *Server) funderName(addr string) string {
-	for n, a := range s.Funders {
-		if strings.EqualFold(a, addr) {
-			return n
-		}
-	}
-	return ""
+	Doc json.RawMessage `json:"doc,omitempty"`
 }

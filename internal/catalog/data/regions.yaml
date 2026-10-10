@@ -1,0 +1,102 @@
+# BouyUp demo catalog — regions.
+# A region is a country. It fixes the currency of a withdrawal and which banks can share it.
+# Amounts everywhere are integers in the currency's minor unit: VND has none (amounts are in đồng),
+# CNY has 2 decimals (amounts are in fen, 1 CNY = 100).
+# Province codes are BouyUp codes. Vietnam uses the 34 provincial units in force since July 2025.
+
+regions:
+  - code: VN
+    name: Vietnam
+    currency: VND
+    minorUnit: 0
+    note: Amounts in đồng. Province list follows the July 2025 merger (34 provincial units); former provinces are named in each note.
+    provinces:
+      - code: VN-HN
+        name: Hà Nội
+        note: Capital. Head offices of most banks; dense seller base for fashion, cosmetics and electronics accessories.
+      - code: VN-HCM
+        name: TP. Hồ Chí Minh
+        cities: [Thủ Đức, Thủ Dầu Một, Vũng Tàu]
+        note: Largest e-commerce market. Includes former Bình Dương and Bà Rịa – Vũng Tàu (industrial parks, ports).
+      - code: VN-HP
+        name: Hải Phòng
+        note: Port city. Includes former Hải Dương. Logistics, light manufacturing, garments.
+      - code: VN-DN
+        name: Đà Nẵng
+        note: Central hub. Includes former Quảng Nam (Hội An). Tourism, handicrafts, seafood processing.
+      - code: VN-CT
+        name: Cần Thơ
+        note: Mekong Delta hub. Includes former Sóc Trăng and Hậu Giang. Rice, fruit, aquaculture.
+      - code: VN-BN
+        name: Bắc Ninh
+        note: Includes former Bắc Giang. Electronics manufacturing cluster (large FDI factories), lychee growing.
+      - code: VN-QNI
+        name: Quảng Ninh
+        note: Border trade with China (Móng Cái), tourism, seafood.
+      - code: VN-DNA
+        name: Đồng Nai
+        note: Includes former Bình Phước. Industrial parks, furniture, cashew and rubber.
+      - code: VN-KH
+        name: Khánh Hòa
+        note: Includes former Ninh Thuận. Tourism (Nha Trang), seafood, salt, grapes.
+      - code: VN-LD
+        name: Lâm Đồng
+        note: Includes former Đắk Nông and Bình Thuận. Coffee, vegetables, flowers, dragon fruit.
+      - code: VN-AG
+        name: An Giang
+        note: Includes former Kiên Giang. Rice, pangasius, Phú Quốc tourism.
+      - code: VN-DLK
+        name: Đắk Lắk
+        note: Includes former Phú Yên. Coffee (Buôn Ma Thuột), pepper, durian.
+
+  - code: CN
+    name: China
+    currency: CNY
+    minorUnit: 2
+    note: Amounts in fen (1 CNY = 100 fen).
+    provinces:
+      - code: CN-GD
+        name: Guangdong
+        cities: [Shenzhen, Guangzhou, Dongguan, Foshan, Shantou]
+        note: Electronics supply chain (Shenzhen, Dongguan), furniture (Foshan), toys (Shantou), cross-border e-commerce.
+      - code: CN-ZJ
+        name: Zhejiang
+        cities: [Hangzhou, Yiwu, Ningbo, Wenzhou]
+        note: Home of Taobao and Tmall sellers; Yiwu small-commodity market; Ningbo port.
+      - code: CN-SH
+        name: Shanghai
+        note: Brands, cosmetics, mother and baby, premium consumer goods.
+      - code: CN-BJ
+        name: Beijing
+        note: Head offices of the large state-owned banks; brands and services.
+      - code: CN-JS
+        name: Jiangsu
+        cities: [Suzhou, Nanjing, Changshu, Wuxi]
+        note: Manufacturing base; Changshu garments, Suzhou electronics and textiles.
+      - code: CN-FJ
+        name: Fujian
+        cities: [Xiamen, Quanzhou, Jinjiang, Putian]
+        note: Footwear and sportswear (Jinjiang, Putian), tea, cross-border sellers.
+      - code: CN-SD
+        name: Shandong
+        cities: [Qingdao, Linyi, Shouguang, Heze]
+        note: Linyi wholesale market, Shouguang vegetables, Heze live-commerce villages.
+      - code: CN-SC
+        name: Sichuan
+        cities: [Chengdu]
+        note: Western consumer hub; food and spice brands, live-commerce studios.
+      - code: CN-HB
+        name: Hubei
+        cities: [Wuhan]
+        note: Central logistics hub, optics and auto parts.
+      - code: CN-YN
+        name: Yunnan
+        cities: [Kunming, Pu'er]
+        note: Tea, flowers, mushrooms, border trade with Southeast Asia.
+      - code: CN-HA
+        name: Henan
+        cities: [Zhengzhou]
+        note: Food processing, wigs (Xuchang), logistics hub.
+      - code: CN-CQ
+        name: Chongqing
+        note: Motorcycles and auto parts, hotpot base and snacks, inland logistics.

@@ -1,112 +1,132 @@
-### SellerGraph blockchain API — run from GoLand / IntelliJ HTTP client (or VS Code REST Client).
-### Amounts are minor units (fen). Start the service with: go run ./cmd/sgchain serve -config configs/mock.json
+### BouyUp chain API — run from GoLand / IntelliJ HTTP client (or VS Code REST Client).
+### Start the service with: go run ./cmd/sgchain serve -config configs/mock.json
+### Amounts are in the currency's smallest unit: VND in đồng, CNY in fen (1 CNY = 100).
 @base = http://localhost:12080
-@id = LN-2026-0001
 
-### chain / backend info
+### overview for the team: what this does, security design, every secret (demo keys), how to decrypt
+GET {{base}}/v1/overview?format=markdown
+
+### chain, contracts and node status
 GET {{base}}/v1/chain
 
-### 1. register the approved credit decision (WeBank sole lender by default)
-POST {{base}}/v1/loans
+### ------------------------------------------------------------ banks & regions
+
+### regions (VN, CN) and their provinces
+GET {{base}}/v1/regions
+
+### banks of a region
+GET {{base}}/v1/banks?region=VN
+
+### full bank profile: limits, policy, contract
+GET {{base}}/v1/banks/VCB
+
+### the policy Agent 3 reads
+GET {{base}}/v1/banks/AGRI/policy
+
+### the bank's contract with BouyUp
+GET {{base}}/v1/banks/WEBANK/contract
+
+### ------------------------------------------------------------ withdrawals
+
+### Agent 4 withdrawal, Vietnam, 3 banks (requestId makes retries safe)
+POST {{base}}/v1/withdrawals
 Content-Type: application/json
 
 {
-  "loanId": "{{id}}", "sellerId": "seller-douyin-778899", "tier": 2,
-  "principal": 10000000, "annualRateBps": 1200, "tenorDays": 120,
-  "sweepRateBps": 4300, "sweepCapBps": 6300, "graceDays": 20,
-  "decision": { "doc": { "pd": 0.031, "segment": "N1", "limitCeiling": 12000000 }, "uri": "s3://webank-sg/decisions/{{id}}.json" }
+  "requestId": "agent4-req-0001",
+  "userId": "U-778899",
+  "accountNo": "0071000123456",
+  "amount": 500000000,
+  "region": "VN",
+  "province": "VN-HN",
+  "bankSplit": { "VCB": 60, "BIDV": 25.5, "TCB": 14.5 },
+  "actor": { "type": "agent", "agentId": "agent-4", "name": "Disbursement & Collection", "version": "4.2.0", "model": "claude-opus-5-5", "runId": "run-20261010-8812" }
 }
 
-### 1b. multi-bank variant (needs funders vcb/tcb in config): shares must sum to principal
-POST {{base}}/v1/loans
+### manual withdrawal by a human, China, 2 banks
+POST {{base}}/v1/withdrawals
 Content-Type: application/json
 
 {
-  "loanId": "LN-2026-0002", "sellerId": "seller-2", "tier": 1, "principal": 3000000,
-  "annualRateBps": 1100, "tenorDays": 60, "sweepRateBps": 3000, "sweepCapBps": 6000, "graceDays": 5,
-  "decision": { "text": "decision package LN-2026-0002" },
-  "funding": [ { "funder": "webank", "amount": 2000000 }, { "funder": "vcb", "amount": 1000000 } ]
+  "userId": "U-102938",
+  "accountNo": "6222020200112233",
+  "amount": 13990000,
+  "currency": "CNY",
+  "region": "CN",
+  "province": "CN-GD",
+  "bankSplit": { "WEBANK": 70, "CMB": 30 },
+  "actor": { "type": "human", "staffId": "CO-17", "role": "credit_officer", "department": "SME Lending Ops",
+             "reason": "Manual payout: agent run failed after approval", "approvalRef": "TICKET-4471" }
 }
 
-### 1c. a funder confirms its share
-POST {{base}}/v1/loans/LN-2026-0002/funding/confirm
+### rejected: ratios add up to 90%  ->  400 invalid_bank_ratio
+POST {{base}}/v1/withdrawals
 Content-Type: application/json
 
-{ "funder": "vcb" }
+{ "userId": "U-1", "accountNo": "1", "amount": 1000000, "region": "VN", "province": "VN-HN",
+  "bankSplit": { "VCB": 60, "TCB": 30 }, "actor": { "type": "agent", "agentId": "agent-4", "version": "4.2.0" } }
 
-### 1d. human officer sign-off (required for tier 2 above the threshold or when the orchestrator flags review)
-POST {{base}}/v1/loans/{{id}}/officer-decision
+### rejected: more than 2 decimals  ->  400 invalid_bank_ratio
+POST {{base}}/v1/withdrawals
 Content-Type: application/json
 
-{ "approved": true, "review": { "doc": { "officer": "co-17", "anomaliesConfirmed": ["purchase price +12% vs 3-month avg"] } } }
+{ "userId": "U-1", "accountNo": "1", "amount": 1000000, "region": "VN", "province": "VN-HN",
+  "bankSplit": { "VCB": 66.667, "TCB": 33.333 }, "actor": { "type": "agent", "agentId": "agent-4", "version": "4.2.0" } }
 
-### 2. one click, one payment — straight to the suppliers
-POST {{base}}/v1/loans/{{id}}/disburse
+### rejected: Agent 3 may not withdraw  ->  403 actor_not_allowed
+POST {{base}}/v1/withdrawals
 Content-Type: application/json
 
-{ "bankTxRef": "WB202610040001", "deliveryDays": 10,
-  "payments": [ { "supplierId": "91310000MA1FL0001X", "amount": 6000000 }, { "supplierId": "91440300MA5F00002Y", "amount": 4000000 } ] }
+{ "userId": "U-1", "accountNo": "1", "amount": 1000000, "region": "VN", "province": "VN-HN",
+  "bankSplit": { "VCB": 100 }, "actor": { "type": "agent", "agentId": "agent-3", "version": "1.0.0" } }
 
-### 3. supplier delivery proof (check 5)
-POST {{base}}/v1/loans/{{id}}/deliveries
+### list withdrawals, newest first
+GET {{base}}/v1/withdrawals?limit=20
+
+### one withdrawal (id or transaction hash) — paste an id from the responses above
+@wid = WD-ED46743BC5E11650
+GET {{base}}/v1/withdrawals/{{wid}}
+
+### verify it against the chain
+GET {{base}}/v1/withdrawals/{{wid}}/verify
+
+### decrypt a withdrawal with a key from the overview's Secrets section (bank key: summary + its share; master key: all)
+POST {{base}}/explorer/api/decrypt
 Content-Type: application/json
 
-{ "line": 0, "waybillNo": "SF1234567890" }
+{ "withdrawalId": "{{wid}}", "privateKey": "<paste a private key from GET /v1/overview>" }
 
-### 4. repayment (sweep / debit / prepayment); extRef is the idempotency key
-POST {{base}}/v1/loans/{{id}}/repayments
+### a bank registers a new public key (new withdrawals use it; old ones keep the old key)
+PUT {{base}}/v1/banks/VCB/public-key
 Content-Type: application/json
 
-{ "amount": 2150000, "source": "proportional_sweep", "extRef": "SWP-0001",
-  "notice": { "doc": { "payout": 5000000, "rate": "43%" } } }
+{ "publicKey": "<64 hex characters>" }
 
-### 5. cumulative floor checkpoint (milestone=true turns any shortfall into overdue)
-POST {{base}}/v1/loans/{{id}}/floor-checkpoints
-Content-Type: application/json
+### ------------------------------------------------------------ audit trail (Agents 1, 2, 3, 5)
 
-{ "floorCumulative": 3000000, "milestone": false }
-
-### 6. monitoring alert / covenant event (Agent 5 pipeline)
-POST {{base}}/v1/loans/{{id}}/alerts
-Content-Type: application/json
-
-{ "level": "yellow", "code": "SALES_DROP", "evidence": { "doc": { "cause": "seasonal" } } }
-
-###
-POST {{base}}/v1/loans/{{id}}/covenant-events
-Content-Type: application/json
-
-{ "code": "STORE_DATA_SHARING", "breached": false, "evidence": { "text": "daily check ok" } }
-
-### 7. officer actions
-POST {{base}}/v1/loans/{{id}}/restructure
-Content-Type: application/json
-
-{ "extraDays": 30, "newSweepRateBps": 3000, "reason": { "doc": { "plan": "Agent 6 draft", "approvedBy": "co-17" } } }
-
-### reads
-GET {{base}}/v1/loans/{{id}}
-
-###
-GET {{base}}/v1/loans/{{id}}/payoff
-
-###
-GET {{base}}/v1/loans?offset=0&limit=20
-
-###
-GET {{base}}/v1/portfolio
-
-### audit trail
+### anchor the hash of a document
 POST {{base}}/v1/audit/anchors
 Content-Type: application/json
 
-{ "subject": "APP-2026-0001", "kind": "ml_output", "content": { "doc": { "pd": 0.031, "factors": ["season_index", "refund_rate"] } } }
+{ "subject": "APP-2026-0001", "kind": "algorithm_output",
+  "content": { "doc": { "grade": "C", "limit": 13990000, "rateBps": 1200, "sweepRateBps": 6300 } },
+  "uri": "s3://webank-sg/APP-2026-0001/ticket.json" }
 
-###
-GET {{base}}/v1/audit/anchors/{{id}}/verify
+### list the anchors of a subject
+GET {{base}}/v1/audit/anchors/APP-2026-0001
 
-###
+### recompute the hash chain
+GET {{base}}/v1/audit/anchors/APP-2026-0001/verify
+
+### was this exact document anchored?
 POST {{base}}/v1/audit/verify
 Content-Type: application/json
 
-{ "content": { "doc": { "pd": 0.031, "segment": "N1", "limitCeiling": 12000000 } } }
+{ "content": { "doc": { "grade": "C", "limit": 13990000, "rateBps": 1200, "sweepRateBps": 6300 } } }
+
+### ------------------------------------------------------------ explorer (public, no token)
+
+GET {{base}}/explorer/api/overview
+
+###
+GET {{base}}/explorer/api/search?q={{wid}}

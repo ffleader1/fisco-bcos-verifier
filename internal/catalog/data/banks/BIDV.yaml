@@ -1,0 +1,133 @@
+# Mock profile for the BouyUp demo. Not the real policy or terms of BIDV.
+code: BIDV
+name: BIDV
+localName: Ngân hàng TMCP Đầu tư và Phát triển Việt Nam
+region: VN
+headquarters: VN-HN
+type: State-owned commercial bank
+active: true
+profile: >-
+  State-owned bank with deep roots in investment and manufacturing finance and a large SME supply-chain book.
+  Thinks in terms of supply chains: who makes the goods, who moves them, who buys them.
+
+limits:
+  minWithdrawal: 5000000
+  maxWithdrawal: 4000000000
+  maxSharePercent: 60
+  dailyCap: 18000000000
+  reimbursementDays: 3
+  feePercent: 0.15
+  maxLoanAmount: 2500000000
+  minAnnualRatePercent: 8
+  maxAnnualRatePercent: 14
+  maxTenorDays: 180
+  minStoreAgeMonths: 18
+  minStoreRating: 4.4
+
+policy:
+  version: "2026.10-1"
+  updatedAt: "2026-10-01"
+  summary: >-
+    BIDV funds sellers that sit in a real, traceable supply chain: a known factory, a known carrier, a steady
+    buyer base. It is comfortable with manufacturing and processed goods, including packaged food, and less
+    comfortable with traders who never touch the goods. It cares that the money goes to production or stock,
+    not to the owner.
+  riskAppetite: >-
+    Low to moderate. Will accept longer cash cycles than most banks if the supply chain is clear.
+  sectors:
+    prefer:
+      - name: Furniture and home furnishings
+        why: Đồng Nai and TP. HCM furniture clusters are a core BIDV client base; goods are durable.
+      - name: Garments made under contract with known factories
+        why: Traceable production and the bank already finances many of these factories.
+      - name: Packaged and processed food (snacks, coffee, dried fruit)
+        why: Longer shelf life than fresh produce; food-safety certificates make checks possible.
+      - name: Household appliances and tools
+        why: Durable goods, clear warranties, verifiable distributors.
+    cautious:
+      - name: Electronics resale
+        why: Fine with official distributor contracts; grey imports are not.
+      - name: Cosmetics
+        why: Needs product notification numbers and a clear importer of record.
+    avoid:
+      - name: Fresh produce and live animals
+        why: Spoilage and weather risk; handled by agricultural lenders.
+      - name: Dropshipping without own stock
+        why: No goods to follow; the purpose of the loan cannot be checked.
+      - name: Luxury goods resale
+        why: High counterfeit risk and price volatility.
+    note: For mixed shops, weight the decision by where the money goes, not by the shop's headline category.
+  regions:
+    prefer:
+      - code: VN-DNA
+        name: Đồng Nai
+        why: Industrial parks and furniture cluster where BIDV finances the suppliers too.
+      - code: VN-BN
+        name: Bắc Ninh
+        why: Manufacturing cluster with many BIDV corporate clients.
+      - code: VN-HCM
+        name: TP. Hồ Chí Minh
+        why: Largest market; former Bình Dương industrial parks are well known to the bank.
+      - code: VN-HP
+        name: Hải Phòng
+        why: Port access lowers delivery risk for imported inputs.
+    cautious:
+      - code: VN-HN
+        name: Hà Nội
+        why: Many trading-only shops; check that the seller holds stock.
+      - code: VN-DN
+        name: Đà Nẵng
+        why: Accepted for processed seafood and handicraft producers with certificates.
+    avoid: []
+    note: Supply-chain proximity matters. A seller close to its factory is preferred over one sourcing from far away.
+  customers:
+    prefer:
+      - name: Sellers who are also small producers
+        why: Assets on the ground and control over quality.
+      - name: Sellers whose supplier already banks with BIDV
+        why: The bank can see both sides of the payment.
+    cautious:
+      - name: Household businesses without a separate business account
+        why: Personal and business money mixed together; ask for a separate account going forward.
+    avoid:
+      - name: Sellers with tax arrears
+        why: Bank-wide policy.
+  useOfFunds:
+    - Raw materials, contract manufacturing or finished stock from a supplier with a signed purchase contract.
+    - The bank prefers payment terms that match the supplier's delivery schedule.
+  positiveSignals:
+    - Purchase contract with delivery dates and penalties.
+    - Supplier with its own factory and business registration older than three years.
+    - Inventory that turns over in less than 60 days.
+  redFlags:
+    - Supplier registered recently at a residential address.
+    - Supplier's registered business line does not match the goods.
+    - Purchase volume far above anything the shop has sold before.
+  escalateWhen:
+    - The supplier cannot be found on the national business registration portal.
+    - Delivery terms longer than 30 days for a campaign less than 45 days away.
+  dealBreakers:
+    - Goods that cannot be traced to a manufacturer or importer.
+    - Smuggled or undeclared imports.
+  reviewerNotes: >-
+    Ask Agent 1's supplier checks first; BIDV's appetite depends mostly on how clear the supply chain is. A strong
+    supply chain can justify a larger share even for a modest shop.
+
+contract:
+  contractNo: BU-BIDV-2026-01
+  title: Payment facilitation and reimbursement agreement
+  parties: [BIDV, BouyUp]
+  status: active
+  effectiveFrom: "2026-02-01"
+  expiresOn: "2028-01-31"
+  creditLine: 80000000000
+  reimbursementTerms: Reimbursement of BIDV's share within 3 business days of the on-chain record.
+  feeTerms: 0.15% of BIDV's share, invoiced monthly.
+  evidenceTerms: The withdrawal record on the BouyUp consortium chain is the evidence of payment.
+  dataTerms: Salted references only on chain; resolution of a reference on written request for a specific withdrawal.
+  governingLaw: Laws of Vietnam
+  disputeResolution: Vietnam International Arbitration Centre (VIAC), Hà Nội
+  termination: 15 business days' notice.
+  keyClauses:
+    - Monthly reconciliation report signed by both parties.
+    - BIDV may require that withdrawals above 2,000,000,000 VND include at least one other bank.

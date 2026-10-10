@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"sellergraph/fisco/internal/api"
+	"bouyup/fisco/internal/api"
 )
 
 // Every route the server registers must be documented, and the spec must not document routes that don't exist.
@@ -48,7 +48,7 @@ func TestOpenAPIMatchesRoutes(t *testing.T) {
 }
 
 func TestDocsServedWithoutToken(t *testing.T) {
-	ts, _ := newServer(t, "secret")
+	ts := newServer(t, "secret")
 	noRedirect := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	resp, err := noRedirect.Get(ts.URL + "/docs")
 	if err != nil {
@@ -76,7 +76,7 @@ func TestDocsServedWithoutToken(t *testing.T) {
 		}
 	}
 	// the API itself still needs the token
-	if resp, _ := http.Get(ts.URL + "/v1/loans"); resp.StatusCode != 401 {
+	if resp, _ := http.Get(ts.URL + "/v1/withdrawals"); resp.StatusCode != 401 {
 		t.Fatalf("API must still require the token, got %d", resp.StatusCode)
 	}
 }

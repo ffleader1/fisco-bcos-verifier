@@ -1,151 +1,173 @@
-# SellerGraph — FISCO BCOS component (Go)
+# BouyUp — FISCO BCOS component (Go)
 
-The blockchain layer of the SellerGraph PoC: the box **"FISCO BCOS Execution Layer"** in the architecture
-diagrams. It is a permissioned, tamper-evident **system of record** for each loan. The ML core, the
-policy engine and the human officers make the credit decisions. This component records those decisions
-and enforces the bookkeeping rules on chain.
+The blockchain service of BouyUp. It does these things:
+
+| Feature | What it does | Who uses it |
+|---|---|---|
+| **Withdrawals** | Pays a user's account (mock treasury, unlimited funds) and writes the payout on chain **encrypted per bank**, with fingerprints that prove each share. Returns the transaction hash, block, sealing node and how many nodes hold it. | Agent 4, or a human for a manual payout |
+| **Bank catalog** | Regions (VN, CN) and provinces; 10 demo banks with numeric limits, a written credit policy and a contract with BouyUp. Stored as YAML. | Agent 3 reads the policies; Agent 4 picks the banks |
+| **Audit trail** | Anchors hashes of documents (applications, algorithm output, agent traces, decisions) in a per-subject hash chain. | Agents 1, 2, 3, 5 and the approval gate |
+| **Explorer** | Public read-only web page at `/explorer/`: blocks, transactions, node status, encrypted withdrawals, and a box to decrypt one with your own key. | Banks, auditors, the team |
+| **Overview** | **`/overview/`** — a friendly page for the team (open the server root, it redirects there): the design, who can read what, a 10-step animation of a withdrawal moving through the 4 nodes (with a demo form that replays your own withdrawal with real timings), a "test every key" bench, every secret with Show/Copy, and copy-paste decrypt commands. Same content as data at `GET /v1/overview` (`?format=markdown`): what this service does, its security design, **every secret** (demo keys), a step-by-step decryption guide with a worked example. | The team |
+
+The loan ledger of earlier versions (loan records, repayments, floors, alerts, covenants, deliveries,
+multi-bank funding) has been removed: this service only pays and records withdrawals.
 
 | | |
 |---|---|
-| Chain | FISCO BCOS **v2.11.1** (2.x LTS line, last release 2024-07-26), group 1, ECDSA (non-SM) |
-| SDK | `github.com/FISCO-BCOS/go-sdk` **v1.1.1**: pure Go, no cgo, builds natively on Windows |
-| Contracts | Solidity 0.6.10 (`contracts/`, compiled output embedded in the binary) |
-| Service | `sgchain`: REST API, `net/http`, Go ≥ 1.22 |
-| Ledgers | `fisco` (real chain) or `mock` (in-memory, same rules: runs with no node) |
+| Chain | FISCO BCOS **v2.11.1**, 4 nodes, group 1, ECDSA (non-SM) |
+| SDK | `github.com/FISCO-BCOS/go-sdk` **v1.1.1** (pure Go, builds on Windows) |
+| Contracts | Solidity 0.6.10: `WithdrawalLedger`, `AuditTrail` (compiled output embedded in the binary) |
+| Service | `sgchain`, Go ≥ 1.22, REST + Swagger page (`/docs/`) + explorer (`/explorer/`) |
+| Ledgers | `fisco` (real chain) or `mock` (in-memory, same rules, for tests and quick demos) |
 
-## What goes on chain
+## Withdrawals
 
-The scope was agreed up front: loan record and status, the repayment ledger, the audit trail and
-delivery proof. Disbursement is **recorded** (payment lines, bank reference, shipping deadline). Restricted
-spending and a supplier whitelist are **not** enforced on chain; supplier vetting (checks 1–4) stays in the
-off-chain scoring.
+```
+POST /v1/withdrawals
+{
+  "requestId": "agent4-req-0001",                 // optional idempotency key
+  "userId": "U-778899", "accountNo": "0071000123456",
+  "amount": 500000000,                            // VND in đồng; CNY in fen
+  "region": "VN", "province": "VN-HN",
+  "bankSplit": { "VCB": 60, "BIDV": 25.5, "TCB": 14.5 },
+  "actor": { "type": "agent", "agentId": "agent-4", "version": "4.2.0" }
+}
+```
 
-**LoanLedger.sol**
-- **Loan record.** Holds the terms from the approved decision: tier, principal, rate, tenor, sweep rate and
-  sweep cap, grace days, and `decisionHash` (the hash of the full approval package).
-  - Lifecycle: `created → approved → active → settled`, with side paths to `cancelled`, `accelerated` and `defaulted`.
-- **Configurable lenders.**
-  - By default **WeBank is the sole lender**. The operator key is the WeBank funder key, so its share is auto-confirmed.
-  - Multi-bank mode (the old diagram 02) still works: N funders whose shares must sum to the principal. Each funder confirms with its own key.
-- **Human gates, enforced by the contract.**
-  - A tier-2 loan above `officerThreshold` (default 500,000 CNY) **always** needs an officer signature, whatever the orchestrator sends.
-  - The orchestrator can also force review: Agent 2 ≠ Agent 3, PD close to the cut-off, a fraud signal, a seller request, and so on.
-  - Acceleration, default and restructuring are **officer-only**. The monitor role (the Agent 5 pipeline) can raise alerts but cannot do any of these.
-- **One click, one payment.** A single disbursement whose payment lines must sum to the principal. A second disbursement is rejected.
-- **Repayment ledger.**
-  - Interest is simple interest on outstanding principal, accrued exactly to the second (the remainder is carried forward).
-  - Each payment is allocated **overdue interest → overdue principal → current interest → principal**. Any excess goes to `refundDue`.
-  - `extRef` is an idempotency key, so the same bank debit can never be booked twice.
-  - Prepayment carries no fee (`previewPayoff`).
-- **Cumulative floor** (sàn lũy kế). The floor can never decrease.
-  - Below the floor → a YELLOW alert.
-  - At a milestone, any remaining shortfall becomes overdue.
-  - At maturity, everything still owed is overdue → a RED alert.
-- **Delivery proof (check 5).** A waybill hash plus the ship date are checked against the deadline. Late shipment emits a `DELIVERY_LATE` covenant event. If nothing ships, `flagMissingDelivery` → `DELIVERY_MISSING` + a RED alert.
-- **Covenant events and alerts** (green / yellow / red) carry evidence hashes.
+- **Bank split rules:** each ratio > 0 with **at most 2 decimals**; the total must be **exactly 100.00%**;
+  banks must exist, belong to the request's region and have an active contract. Otherwise
+  `400 invalid_bank_ratio` (or `unknown_bank`, `bank_region_mismatch`, `bank_unavailable`).
+  The contract re-checks the 100.00% rule, so a bad split can never reach the chain.
+- **Actor:** `agent` (only `agent-4` may withdraw, with its `version`) or `human` (`staffId`, `role`,
+  and a `reason` are required). The chain records the actor type, agent id + version or the human role,
+  a salted reference of the staff id, and the hash of the full actor object.
+- **Amounts per bank:** `amount × ratio`, the largest share takes the rounding remainder, so the legs always
+  add up. Each bank's share stays `reimbursement: pending`; claiming it from the bank is outside this service.
+- **Privacy:** the chain stores the withdrawal **encrypted** (next section). Inside it, `userId` + `accountNo` are a salted `accountRef`.
+- **Response:** the record plus `chain` = `txHash`, `blockNumber`, `blockHash`, `submittedTo`, `sealedBy`,
+  `confirmedNodes / totalNodes`, per-node confirmations, `explorerUrl`, `verifyUrl`.
+- `GET /v1/withdrawals/{id|txHash}` reads it back from the chain and decrypts it with the BouyUp master key;
+  `.../verify` recomputes the Merkle root, decrypts every piece, matches the fingerprints, re-checks the 100%
+  split and asks every node whether it holds the transaction.
 
-**AuditTrail.sol** (F18)
-- Anchors **hashes only** of: application, ML output, agent I/O, credit memo (Agent 2), risk challenge
-  (Agent 3), human decision, offer/contract, Art. 24 explanation, sweep notice, decision package.
-- Each subject keeps a **hash chain** (`head = keccak(prev, kind, hash, ts)`). If any off-chain record is
-  deleted or reordered, `GET /v1/audit/anchors/{subject}/verify` detects it.
+## Encryption: each bank sees only its own share
 
-**Privacy:** no personal data on chain. Seller and supplier IDs become HMAC-SHA256 references (`refSalt`,
-held by WeBank). Documents are hashed canonically (sorted-key JSON, SHA-256).
+The chain is shared by every member, so nothing readable goes on it:
 
-**Roles:** `admin`, `operator` (the fixed-code orchestrator), `officer` (a human), `monitor`, `funder`,
-`audit writer`. Each role signs with its own key.
+| Piece | Readable by |
+|---|---|
+| Summary: amount, currency, region, province, account ref, payout ref, actor, number of banks | every bank of that withdrawal + BouyUp |
+| Bank X's share: percent, amount, contract no. | bank X + BouyUp only |
+
+- Each piece is encrypted with its own random key (AES-256-GCM). The piece keys are handed out in unnamed,
+  shuffled **key slots**, one per reader, each locked with X25519 + HKDF-SHA256 to that reader's public key.
+  A reader finds its slot by trying its key. Format: `internal/sealing/sealing.go`.
+- On chain: the envelope, a SHA-256 **commitment** of each piece's plaintext (salted) and their **Merkle root**,
+  which the contract recomputes. A bank proves its share to anyone by showing the piece; nobody (BouyUp included)
+  can show different contents later.
+- Keys: `bankKeysFile` (default `keys/bank-keys.json`) is created with fresh **demo** key pairs for the master
+  and every bank on first start. A bank changes its key with `PUT /v1/banks/{code}/public-key`; older
+  withdrawals stay readable with its older key.
+- `showDemoKeys` (default **true**) prints every private key in `GET /v1/overview` so the team can test
+  decryption. Set it to `false` (or `SG_SHOW_DEMO_KEYS=false`) when real keys are used.
+- Decrypt with any key: the explorer's "Decrypt with your key" box, `POST /explorer/api/decrypt`,
+  `sgchain decrypt -server <url> -id <WD-…> -key <hex>`, or the standalone
+  `internal/api/explorer/decrypt_withdrawal.py` (also served at `/explorer/decrypt_withdrawal.py`; needs
+  `pip install cryptography`), which does not trust the server at all.
+
+## Bank catalog (YAML)
+
+`internal/catalog/data/regions.yaml` and `internal/catalog/data/banks/*.yaml` are built into the binary.
+To edit them without rebuilding, copy the `data/` folder and set `"catalogDir"` (or `SG_CATALOG_DIR`).
+Unknown YAML fields are rejected at startup, so typos fail loudly.
+
+- VN: Vietcombank (VCB), Techcombank (TCB), BIDV, Agribank (AGRI), MB Bank (MBB). Currency VND.
+- CN: WeBank, ICBC, China Construction Bank (CCB), Bank of China (BOC), China Merchants Bank (CMB). Currency CNY.
+- Each bank has `limits` (numbers; not enforced by the withdrawal endpoint), `policy` (text for Agent 3:
+  sector / province / customer preferences with reasons, red flags, when to escalate, deal breakers) and
+  `contract` (its mock agreement with BouyUp). Policy and contract carry a SHA-256 `hash`.
+- **All bank data is mock data for the demo**, not the real policy or terms of these banks.
 
 ## Quick start: mock, no chain (Windows / any OS)
 
 ```bash
 go mod tidy                                   # first time: resolves go.sum
-go test ./...                                 # unit + API + conformance tests
+go test ./...                                 # unit, API and conformance tests
 go run ./cmd/sgchain serve -config configs/mock.json
 ```
-Then open **`api.http`** in GoLand and run the requests. Or, from bash, run `./scripts/demo.sh`.
+Then open `http://localhost:12080/docs/` (API reference) and `http://localhost:12080/explorer/`,
+or run the requests in **`api.http`** (GoLand) or `./scripts/demo.sh`.
 
-## Real chain
+## Real chain (4 nodes)
 
-The chain runs on Linux. On Windows use **WSL2 (Ubuntu)**. `sgchain` itself can run on Windows: WSL2
-forwards `127.0.0.1:20200`.
+The chain runs on Linux. On Windows use **WSL2 (Ubuntu)**; `sgchain` itself can run on Windows.
 
 ```bash
-# in WSL2 / Linux, from the repo:
-CHAIN_DIR=~/sg-chain ./scripts/start_chain.sh    # 4 nodes, certs copied to ./chain/sdk
-go run ./cmd/sgchain keygen -out keys -names admin,operator,officer,monitor,vcb,tcb
-#   edit configs/fisco.json: set refSalt (≥16 chars)
-go run ./cmd/sgchain deploy -config configs/fisco.json   # deploy + roles + policy -> chain/contracts.json
+CHAIN_DIR=~/sg-chain ./scripts/start_chain.sh            # 4 nodes: channel ports 20200-20203, SDK certs -> ./chain/sdk
+go run ./cmd/sgchain keygen -out keys                     # admin + operator keys
+#   edit configs/fisco.json: set refSalt (>= 16 chars)
+go run ./cmd/sgchain deploy -config configs/fisco.json   # deploy WithdrawalLedger + AuditTrail, grant roles -> chain/contracts.json
 go run ./cmd/sgchain serve  -config configs/fisco.json   # http://localhost:12080
 ./scripts/demo.sh
 ```
-- Multi-bank: use `configs/fisco.multibank.json` (funders webank, vcb, tcb).
-- After adding a funder, run `sgchain bootstrap`.
-- Keys can be 0x-hex, a file containing hex, or a FISCO console PEM account file.
-- `SG_*` environment variables override the config (`SG_REF_SALT`, `SG_API_TOKEN`, `SG_KEY_OPERATOR`, …).
+- `node.nodeURL` is the node transactions are sent to; `node.peers` lists the other nodes. The service
+  connects to all of them read-only to show node status and per-transaction confirmations. An offline peer
+  is shown as offline, it does not stop the service.
+- The contracts changed: run `deploy` again on an existing chain.
+- `SG_*` environment variables override the config (`SG_REF_SALT`, `SG_API_TOKEN`, `SG_KEY_OPERATOR`,
+  `SG_NODE_PEERS`, `SG_CATALOG_DIR`, …).
 
-## API reference page
-
-Open **`http://<host>:12080/docs/`** in a browser. It's a Swagger UI page listing every endpoint, with
-field descriptions and example bodies. "Try it out" sends real requests; click **Authorize** and paste the
-API token first.
-
-- Everything is built into the binary (Swagger UI 5.33.1 is vendored), so it works with no internet access.
-- The machine-readable spec is at `/openapi.json` (also `/docs/openapi.json`).
-- The page and the spec need no token. Every API call still does.
-- Set `"disableDocs": true` in the config to turn the page off.
-- It also works behind a reverse proxy, including under a sub-path such as `https://example.com/sgapi/docs/`.
-
-## API (JSON, amounts in fen, times are RFC3339 or unix seconds)
+## API (JSON)
 
 | Method & path | Purpose |
 |---|---|
-| `POST /v1/loans` | register an approved decision (`decision.doc` is anchored and becomes `decisionHash`) |
-| `POST /v1/loans/{id}/funding/confirm` | funder confirms its share (multi-bank) |
-| `POST /v1/loans/{id}/officer-decision` | human sign-off / rejection (`review` anchored) |
-| `POST /v1/loans/{id}/cancel` | offer declined or expired |
-| `POST /v1/loans/{id}/disburse` | the one payment, to the suppliers |
-| `POST /v1/loans/{id}/repayments` | sweep / debit / prepayment / recovery; returns the allocation |
-| `POST /v1/loans/{id}/floor-checkpoints` | cumulative floor check (`milestone` → overdue) |
-| `POST /v1/loans/{id}/mature` · `accelerate` · `default` · `restructure` | lifecycle; the last three are officer-only |
-| `POST /v1/loans/{id}/alerts` · `covenant-events` | monitoring |
-| `POST /v1/loans/{id}/deliveries` · `deliveries/{line}/missing` | delivery proof (check 5) |
-| `GET /v1/loans/{id}` · `/payoff?asOf=` · `GET /v1/loans` · `GET /v1/portfolio` | reads, portfolio, per-funder exposure |
+| `POST /v1/withdrawals` | pay an account and record the withdrawal on chain |
+| `GET /v1/withdrawals` · `GET /v1/withdrawals/{id}` · `GET /v1/withdrawals/{id}/verify` | list, read (id or tx hash), verify against the chain |
+| `POST /explorer/api/decrypt` | decrypt a withdrawal with your own key (public) |
+| `POST /v1/demo/withdrawals` | demo only (needs `showDemoKeys`): a manual withdrawal marked `DEMO`, capped at 10,000,000 VND / 50,000 CNY, returned with a `trace` of each stage and when every node wrote the block |
+| `GET /overview/` | team overview page (public; the secrets on it load from `/v1/overview`, which needs the token when one is set) |
+| `GET /v1/overview[?format=markdown]` | security design, secrets, decryption guide |
+| `GET /v1/regions` | countries and provinces |
+| `GET /v1/banks?region=` · `GET /v1/banks/{code}` · `/policy` · `/contract` | bank catalog |
+| `PUT /v1/banks/{code}/public-key` | a bank registers a new encryption key |
 | `POST /v1/audit/anchors` · `GET /v1/audit/anchors/{subject}[/verify]` · `POST /v1/audit/verify` | audit trail |
-| `POST /blockchain/create-loan` · `/blockchain/disburse` · `/repayment` · `GET /portfolio` | aliases named after the endpoints in diagram 02 |
+| `GET /explorer/api/overview` · `blocks` · `blocks/{n}` · `tx/{hash}` · `withdrawals[/{id}]` · `search?q=` | public explorer data |
+| `GET /healthz` · `GET /v1/chain` | health, contracts, accounts, nodes |
 
-Errors come back as `{"error":{"kind","message"}}`. Status codes: `invalid` 400, `unauthorized` 403,
-`not_found` 404, `bad_status` / `duplicate` 409, `chain` 502. The kind comes from the contract's revert code.
+Full reference with examples: `/docs/` (Swagger UI, works offline) or `/openapi.json`.
+`/v1/*` needs `Authorization: Bearer <apiToken>` when a token is set; `/healthz`, `/docs/` and `/explorer/` are public.
+Errors: `{"error":{"kind","message","details"}}` — branch on `kind` (see the table at the top of `/docs/`).
 
 ## Tests
 
-- `go test ./...`: hashing, the HTTP API end to end, and the **conformance suite** on the mock.
-- `make chain && make test-integration`: the **same conformance suite on a live chain**. It deploys fresh contracts and keys.
-  - It covers 10 scenarios: the Part 10 example, multi-funder, human gate, validation, floor/overdue/allocation, maturity/acceleration/default, delivery proof, restructuring, exact payoff, and the audit hash chain.
-  - The suite checks interest against an independent calculation, and the mock must pass exactly the same assertions as the chain.
-
-## Notes and limits
-
-- **asOf / time.** Repayments and checkpoints carry a value date (`asOf`). The contract only accepts one up to
-  `maxFutureSkewSec` (default 300 s) ahead of block time. The integration tests set a skew of 400 days to replay
-  a whole loan in seconds. Never do that in production.
-- FISCO BCOS 2.x `block.timestamp` is in **milliseconds**. The contracts divide by 1000.
-- **SM (国密) chains are not supported yet.** That needs SM2 keys and the SM3 hash-chain formula.
-- **Upgrading to FISCO 3.x:** add an adapter for go-sdk v3 (cgo) that implements `ledger.Ledger`. The contracts and the API stay the same.
-- The mock is in-memory. `/v1/portfolio` scans every loan, which is fine at PoC scale; production would use an event indexer.
-- For production keys, use an HSM or KMS instead of key files.
+- `go test ./...`: hashing, catalog, the HTTP API end to end, and the **conformance suite** on the mock.
+- `make chain && make test-integration`: the **same conformance suite on the live 4-node chain** (fresh contracts
+  and keys each run): withdrawals, on-chain split validation, listing, audit hash chain, explorer reads and
+  per-node confirmations.
 
 ## Layout
 
 ```
-contracts/            Roles.sol, LoanLedger.sol, AuditTrail.sol, build/ (ABI+BIN, embedded)
-cmd/sgchain/          keygen | deploy | bootstrap | serve
+contracts/            Roles.sol, WithdrawalLedger.sol, AuditTrail.sol, build/ (ABI+BIN, embedded)
+cmd/sgchain/          keygen | deploy | bootstrap | serve | decrypt
+internal/api/         REST handlers, explorer page (explorer/index.html), OpenAPI + Swagger UI (docs/)
+internal/catalog/     regions + banks (data/*.yaml)
+internal/payout/      paying system (mock treasury)
+internal/sealing/     per-bank encryption (X25519 + HKDF + AES-GCM), commitments, Merkle root
+internal/keystore/    master + bank encryption keys (demo key file)
 internal/ledger/      domain types + Ledger interface
   fisco/              go-sdk v1.1.1 adapter (+ integration test)
   mock/               in-memory implementation of the same rules
   ledgertest/         conformance suite shared by both
-internal/api/         REST handlers, portfolio
 internal/hashing/     salted refs, canonical JSON hashing
 configs/ scripts/     configs, chain start/stop, demo, solc build
 api.http              GoLand HTTP client requests
 ```
+
+## Notes and limits
+
+- FISCO BCOS 2.x `block.timestamp` is in milliseconds; the contracts divide by 1000.
+- The payout is a mock. A real paying system plugs in behind `payout.Payer` (it must be idempotent per withdrawal id).
+- If the chain write fails after the mock payout, the error is logged with the withdrawal id and payout reference.
+- SM (国密) chains are not supported yet. For production keys, use an HSM or KMS instead of key files.

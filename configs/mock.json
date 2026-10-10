@@ -1,6 +1,6 @@
 {
   "listen": ":12080",
   "ledger": "mock",
-  "defaultFunder": "webank",
-  "policy": { "maxRateBps": 2400, "officerThreshold": 50000000, "maxFutureSkewSec": 300 }
+  "showDemoKeys": true,
+  "bankKeysFile": "../keys/bank-keys.json"
 }

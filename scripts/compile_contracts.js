@@ -9,7 +9,7 @@ const res = JSON.parse(solc.compile(JSON.stringify(input), { import: p => ({ con
 let bad = false;
 for (const e of res.errors || []) { console.error(e.formattedMessage); if (e.severity === 'error') bad = true; }
 if (bad) process.exit(1);
-for (const name of ['LoanLedger', 'AuditTrail']) {
+for (const name of ["WithdrawalLedger", "AuditTrail"]) {
   const c = res.contracts[name + '.sol'][name];
   fs.writeFileSync(path.join(out, name + '.abi'), JSON.stringify(c.abi));
   fs.writeFileSync(path.join(out, name + '.bin'), c.evm.bytecode.object);

@@ -1,0 +1,1304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BouyUp Chain Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF2EE; --sheet:#F8FAF8; --ink:#173A2D; --text:#1D2722; --muted:#5B6B63; --rule:#CCD8D1;
+  --brass:#9A6F14; --brass-soft:#F3E7C8; --seal:#A8321F; --seal-soft:#F6DDD7; --ok:#1E7A4F; --ok-soft:#D9EFE3;
+  --guilloche:rgba(23,58,45,.055);
+  --sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0E1813; --sheet:#14211B; --ink:#9FD8BC; --text:#E2EBE6; --muted:#97A89F; --rule:#28392F;
+  --brass:#E0B455; --brass-soft:#3A3018; --seal:#F08A74; --seal-soft:#3C1E18; --ok:#6CD39F; --ok-soft:#173326;
+  --guilloche:rgba(159,216,188,.05);
+}}
+:root[data-theme="dark"]{
+  --paper:#0E1813; --sheet:#14211B; --ink:#9FD8BC; --text:#E2EBE6; --muted:#97A89F; --rule:#28392F;
+  --brass:#E0B455; --brass-soft:#3A3018; --seal:#F08A74; --seal-soft:#3C1E18; --ok:#6CD39F; --ok-soft:#173326;
+  --guilloche:rgba(159,216,188,.05);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--paper);color:var(--text);font:16px/1.6 var(--sans);
+  background-image:repeating-radial-gradient(circle at 0 0, transparent 0 22px, var(--guilloche) 22px 23px);}
+a{color:var(--ink);text-underline-offset:3px}
+code,.mono{font-family:var(--mono);font-size:.86em}
+:focus-visible{outline:3px solid var(--brass);outline-offset:2px;border-radius:4px}
+
+.shell{display:grid;grid-template-columns:230px minmax(0,1fr);gap:48px;max-width:1240px;margin:0 auto;padding:0 24px}
+@media (max-width:900px){.shell{grid-template-columns:1fr;gap:0;padding:0 16px}}
+nav.index{position:sticky;top:0;align-self:start;padding:36px 0;max-height:100vh;overflow:auto}
+@media (max-width:900px){nav.index{display:none}}
+.brand{font-weight:700;font-size:1.15rem;color:var(--ink);letter-spacing:-.01em;margin-bottom:22px;display:block;text-decoration:none}
+.brand span{font-weight:500;color:var(--muted)}
+nav.index ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--rule)}
+nav.index li a{display:block;padding:6px 0 6px 14px;margin-left:-2px;border-left:2px solid transparent;color:var(--muted);text-decoration:none;font-size:.93rem}
+nav.index li a:hover{color:var(--text)}
+nav.index li a.on{color:var(--ink);border-left-color:var(--ink);font-weight:600}
+.theme{font:inherit;font-size:.85rem;background:none;border:1px solid var(--rule);color:var(--muted);border-radius:8px;padding:6px 12px;cursor:pointer}
+
+main{padding:24px 0 96px;min-width:0}
+:root[lang="vi"]{--sans:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+:root[lang="vi"] h1{line-height:1.18;letter-spacing:-.02em}
+:root[lang="vi"] h2{line-height:1.3}
+.topbar{display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:22px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--sheet)}
+.seg button{font:500 .86rem var(--sans);padding:6px 13px;border:0;background:none;color:var(--muted);cursor:pointer}
+.seg button[lang="vi"]{font-family:"Be Vietnam Pro",var(--sans)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--sheet);font-weight:600}
+section{padding:40px 0 8px;border-top:1px solid var(--rule)}
+section:first-of-type{border-top:0;padding-top:8px}
+h1{font-size:clamp(2rem,4.2vw,3.1rem);line-height:1.08;letter-spacing:-.025em;margin:0 0 16px;color:var(--ink);font-weight:700;max-width:22ch;text-wrap:balance}
+h2{font-size:1.6rem;line-height:1.2;letter-spacing:-.015em;margin:0 0 12px;color:var(--ink)}
+h3{font-size:1.08rem;margin:26px 0 8px}
+p,li{max-width:72ch}
+.lead{font-size:1.15rem;color:var(--text);max-width:62ch}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+
+.buttons{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 6px}
+.btn{display:inline-flex;align-items:center;gap:8px;font:600 .95rem var(--sans);padding:10px 16px;border-radius:8px;border:1.5px solid var(--ink);background:var(--ink);color:var(--sheet);text-decoration:none;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.brass{background:var(--brass);border-color:var(--brass);color:#fff}
+:root[data-theme="dark"] .btn.brass{color:#1b1406}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.brass{color:#1b1406}}
+.btn:disabled{opacity:.55;cursor:progress}
+.mini{font:500 .78rem var(--sans);padding:3px 9px;border-radius:6px;border:1px solid var(--rule);background:var(--sheet);color:var(--muted);cursor:pointer}
+.mini:hover{color:var(--text);border-color:var(--muted)}
+
+.status{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:999px;background:var(--sheet);border:1px solid var(--rule);font-size:.86rem}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.on{background:var(--ok)} .dot.off{background:var(--seal)}
+
+/* the sealed envelope (hero) */
+.envelope{margin-top:30px;background:var(--sheet);border:1.5px solid var(--ink);border-radius:14px;padding:22px;position:relative;overflow:hidden}
+.envelope::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent 0 14px,var(--guilloche) 14px 15px);pointer-events:none}
+.env-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;position:relative}
+.env-head b{font-family:var(--mono);font-size:.95rem;color:var(--ink)}
+.pieces{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:16px;position:relative}
+.piece{border:1.5px dashed var(--rule);border-radius:10px;padding:12px;background:var(--paper);min-height:92px}
+.piece .t{font-weight:600;font-size:.92rem}
+.piece .c{font-family:var(--mono);font-size:.74rem;color:var(--muted);overflow-wrap:anywhere;margin-top:6px}
+.piece .m{font-size:.78rem;color:var(--ok);margin-top:6px}
+.piece.open{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.piece.closed{border-color:var(--rule)}
+.lock{display:inline-block;width:18px;text-align:center}
+.slots{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;position:relative;align-items:center}
+.slot{width:26px;height:18px;border-radius:4px;border:1.5px solid var(--brass);background:var(--brass-soft)}
+.slot.hit{background:var(--brass)}
+
+/* tables */
+.wide{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--rule);vertical-align:top;font-size:.93rem}
+th{font-weight:600;color:var(--muted);background:var(--paper)}
+tr:last-child td{border-bottom:0}
+td.y{color:var(--ok);font-weight:600} td.n{color:var(--muted)}
+.keycell{font-family:var(--mono);font-size:.78rem;overflow-wrap:anywhere;min-width:16ch}
+#secrets-table td:last-child{width:48%}
+#secrets-table .group td{background:var(--paper);font-weight:600;font-size:.82rem;color:var(--muted);padding-top:14px}
+.keyrow{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}.keyrow .keycell{flex:1 1 30ch}
+.masked{letter-spacing:.12em;color:var(--muted)}
+
+/* steps */
+ol.steps{list-style:none;counter-reset:s;padding:0;margin:16px 0}
+ol.steps>li{counter-increment:s;position:relative;padding:0 0 18px 52px;max-width:72ch}
+ol.steps>li::before{content:counter(s);position:absolute;left:0;top:-2px;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--ink);color:var(--ink);display:grid;place-items:center;font-weight:700;background:var(--sheet)}
+ol.steps>li::after{content:"";position:absolute;left:17px;top:34px;bottom:2px;border-left:1.5px dashed var(--rule)}
+ol.steps>li:last-child::after{display:none}
+ol.steps b{display:block}
+
+details.tech{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;margin:10px 0;padding:0 16px}
+details.tech summary{cursor:pointer;padding:14px 0;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:12px}
+details.tech summary::-webkit-details-marker{display:none}
+details.tech summary span{font-weight:400;color:var(--muted);font-size:.9rem}
+details.tech[open] summary{border-bottom:1px solid var(--rule)}
+.tech-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:14px 0 16px}
+@media (max-width:700px){.tech-grid{grid-template-columns:1fr}}
+.tech-grid h4{margin:0 0 4px;font-size:.82rem;color:var(--muted);font-weight:600}
+.tech-grid p{margin:0;font-size:.93rem}
+
+.banner{border-radius:10px;padding:12px 16px;margin:14px 0;border:1.5px solid var(--brass);background:var(--brass-soft)}
+.banner.seal{border-color:var(--seal);background:var(--seal-soft)}
+
+/* bench */
+.bench{background:var(--sheet);border:1.5px solid var(--ink);border-radius:14px;padding:20px;margin-top:14px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:.85rem;color:var(--muted);flex:1 1 240px}
+select,input[type=text],input[type=password],textarea{font:inherit;font-size:.92rem;padding:9px 10px;border-radius:8px;border:1.5px solid var(--rule);background:var(--paper);color:var(--text);width:100%}
+textarea{font-family:var(--mono);font-size:.8rem;min-height:56px}
+.out{margin-top:16px}
+.verdict{white-space:nowrap;display:inline-flex;align-items:center;gap:8px;font-weight:600;padding:6px 12px;border-radius:8px}
+.verdict.ok{background:var(--ok-soft);color:var(--ok)} .verdict.no{background:var(--seal-soft);color:var(--seal)}
+pre.code{background:var(--ink);color:var(--sheet);padding:14px 16px;border-radius:10px;overflow-x:auto;font:.8rem/1.55 var(--mono);margin:8px 0 0;white-space:pre-wrap;word-break:break-all}
+:root[data-theme="dark"] pre.code{background:#08100C;color:var(--text)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) pre.code{background:#08100C;color:var(--text)}}
+.tabs{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.tab{font:600 .85rem var(--sans);padding:6px 12px;border-radius:7px;border:1px solid var(--rule);background:var(--paper);color:var(--muted);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--sheet)}
+.codebox{position:relative}
+.codebox .mini{position:absolute;top:8px;right:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:700px){.grid2{grid-template-columns:1fr}}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:.92rem}
+.kv dt{color:var(--muted)} .kv dd{margin:0;word-break:break-all}
+.share{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--paper);border:1px solid var(--rule);margin:8px 0}
+.share i{display:block;height:100%}
+.empty{padding:18px;border:1.5px dashed var(--rule);border-radius:10px;color:var(--muted)}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--sheet);padding:8px 14px;border-radius:8px;font-size:.88rem;opacity:0;transition:opacity .2s}
+.toast.show{opacity:1}
+
+/* live walkthrough */
+.demo-form{background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:16px 18px;margin:16px 0}
+.demo-form h3{margin:0 0 4px}
+.formgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+@media (max-width:700px){.formgrid{grid-template-columns:1fr}}
+.splitrows{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) 110px auto auto;gap:8px;align-items:center}
+.srow input{text-align:right}
+.row2{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0 4px;flex-wrap:wrap}
+.total{font-weight:600;font-size:.9rem}
+.total.ok{color:var(--ok)} .total.bad{color:var(--seal)}
+.fmsg{font-size:.9rem}
+.fmsg.ok{color:var(--ok)} .fmsg.bad{color:var(--seal)}
+.live{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin-top:14px;background:var(--sheet);border:1.5px solid var(--ink);border-radius:14px;padding:18px}
+.livehead{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
+.stage{border-radius:10px;background:var(--paper);border:1px solid var(--rule);overflow:hidden;outline-offset:3px}
+.stage svg{display:block;width:100%;height:auto}
+.tbar{height:3px;background:var(--rule)} .tbar i{display:block;height:100%;width:0;background:var(--brass)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.8rem;color:var(--muted);padding:8px 12px;border-top:1px solid var(--rule)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%}
+.legend i.b{border-radius:3px;width:14px;background:var(--brass-soft);border:1.5px solid var(--brass)}
+.caption{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:200px;max-width:78ch}
+.caption h3{margin:2px 0 0;font-size:1.2rem;color:var(--ink)}
+.caption p{margin:0}
+.kind{display:inline-block;font-size:.76rem;font-weight:600;padding:2px 9px;border-radius:999px;margin-left:8px}
+.kind.m{background:var(--ok-soft);color:var(--ok)} .kind.h{background:var(--brass-soft);color:var(--brass)} .kind.i{background:var(--paper);color:var(--muted);border:1px solid var(--rule)}
+.measure{border-left:3px solid var(--ok);padding:8px 12px;background:var(--paper);border-radius:0 8px 8px 0;font-size:.9rem}
+.measure.none{border-left-color:var(--rule);color:var(--muted)}
+.measure table{border:0;background:none;margin-top:6px;width:auto} .measure td{padding:3px 10px 3px 0;border:0;font-size:.88rem}
+.controls{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dots{display:flex;gap:6px;flex-wrap:wrap;margin-left:6px}
+.dots button{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--rule);background:var(--paper);font:600 .82rem var(--sans);color:var(--muted);cursor:pointer;padding:0}
+.dots button.past{border-color:var(--ink);color:var(--ink)}
+.dots button.on{border-color:var(--ink);background:var(--ink);color:var(--sheet)}
+/* svg scene */
+.sv-link{stroke:var(--rule);stroke-width:1.5;stroke-dasharray:4 5}
+.sv-wire{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:2 4}
+.sv-box{fill:var(--sheet);stroke:var(--ink);stroke-width:1.5}
+.sv-card{fill:var(--sheet);stroke:var(--rule);stroke-width:1.2}
+.sv-node{fill:var(--sheet);stroke:var(--ink);stroke-width:2;transition:fill .25s}
+.sv-node.wrote{fill:var(--ok-soft);stroke:var(--ok)}
+.sv-node.down{fill:var(--paper);stroke:var(--muted);stroke-dasharray:4 3}
+.sv-t{fill:var(--text);font:600 16px var(--sans)}
+.sv-s{fill:var(--muted);font:500 13.5px var(--sans)}
+.sv-s.ok{fill:var(--ok);font-weight:600} .sv-s.bad{fill:var(--seal);font-weight:600} .sv-s.br{fill:var(--brass);font-weight:600}
+.sv-m{fill:var(--muted);font:500 11.5px var(--mono)}
+.sv-b{fill:var(--brass);font:700 12px var(--mono)}
+.sv-big{fill:var(--ink);font:700 17px var(--sans)}
+.sv-bar0{fill:var(--rule)} .sv-bar{fill:var(--ink)}
+.sv-tx{fill:var(--brass)} .sv-v1{fill:var(--brass);opacity:.85} .sv-v2{fill:var(--ok)}
+.sv-env{fill:var(--brass-soft);stroke:var(--brass);stroke-width:1.5} .sv-envflap{fill:none;stroke:var(--brass);stroke-width:1.5}
+.sv-block{fill:var(--brass-soft);stroke:var(--brass);stroke-width:1.5;stroke-dasharray:3 2} .sv-block.done{fill:var(--ok-soft);stroke:var(--ok);stroke-dasharray:none}
+.sv-leader{fill:none;stroke:var(--brass);stroke-width:3}
+.sv-arc1{fill:none;stroke:var(--brass);stroke-width:4;stroke-linecap:round} .sv-arc2{fill:none;stroke:var(--ok);stroke-width:4;stroke-linecap:round}
+.sv-piece{fill:var(--paper);stroke:var(--ink);stroke-width:1.2} .sv-piece.sum{fill:var(--ok-soft)}
+.sv-slot{fill:var(--brass-soft);stroke:var(--brass);stroke-width:1.2}
+.sv-lock{fill:var(--ink)} .sv-lockarc{fill:none;stroke:var(--ink);stroke-width:1.6}
+.sv-pill{fill:var(--sheet);stroke:var(--rule)}
+@media (max-width:640px){.sv-t{font-size:23px}.sv-s{font-size:19px}.sv-m{font-size:16px}.sv-b{font-size:15px}.legend{font-size:.76rem}}
+.sv-x{stroke:var(--seal);stroke-width:3;stroke-linecap:round}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="index" aria-label="Sections">
+  <a class="brand" href="#top">BouyUp <span>chain</span></a>
+  <ol id="toc">
+    <li><a href="#top" data-i18n="toc.top">The idea</a></li>
+    <li><a href="#does" data-i18n="toc.does">What it does</a></li>
+    <li><a href="#flow" data-i18n="toc.flow">A withdrawal, step by step</a></li>
+    <li><a href="#who" data-i18n="toc.who">Who can read what</a></li>
+    <li><a href="#live" data-i18n="toc.live">Watch it happen</a></li>
+    <li><a href="#security" data-i18n="toc.security">Security, technique by technique</a></li>
+    <li><a href="#bench" data-i18n="toc.bench">Try every key</a></li>
+    <li><a href="#secrets" data-i18n="toc.secrets">Secrets</a></li>
+    <li><a href="#yourself" data-i18n="toc.yourself">Decrypt it yourself</a></li>
+    <li><a href="#endpoints" data-i18n="toc.endpoints">Endpoints</a></li>
+    <li><a href="#limits" data-i18n="toc.limits">Limits and config</a></li>
+  </ol>
+</nav>
+
+<main>
+<div class="topbar">
+  <div class="seg" role="group" aria-label="Language / Ngôn ngữ">
+    <button type="button" data-lang="en" aria-pressed="true">English</button>
+    <button type="button" data-lang="vi" aria-pressed="false" lang="vi">Tiếng Việt</button>
+  </div>
+  <button class="theme" id="theme" type="button">Switch to dark</button>
+</div>
+
+<section id="top">
+  <h1 data-i18n="hero.h1">Every bank sees its own share. Nobody can change it.</h1>
+  <p class="lead" data-i18n="hero.lead">This is BouyUp's blockchain service. Agent 4 pays a user, the payout is split between partner banks, and the record goes onto a 4-node FISCO BCOS chain, encrypted so each bank can read only its own part and prove it to anyone.</p>
+  <div class="buttons">
+    <a class="btn" href="#bench" data-i18n="hero.b1">Try decrypting a withdrawal</a>
+    <a class="btn ghost" href="../explorer/" data-i18n="hero.b2">Open the chain explorer</a>
+    <a class="btn ghost" href="../docs/" data-i18n="hero.b3">API reference</a>
+  </div>
+  <div class="status" id="status"></div>
+
+  <div class="envelope" id="hero-env" aria-live="polite">
+    <div class="env-head"><span data-i18n="hero.envhead">Latest withdrawal on the chain, exactly as every member sees it</span><b id="hero-id">…</b></div>
+    <div class="pieces" id="hero-pieces"></div>
+    <div class="slots" id="hero-slots"></div>
+    <p class="small muted" style="position:relative;margin:12px 0 0" data-i18n="hero.envnote">Locked pieces and unnamed key slots: that is all the chain shows. Pick a key in <a href="#bench">Try every key</a> to see which pieces it opens.</p>
+  </div>
+</section>
+
+<section id="does">
+  <h2 data-i18n="does.h2">What this part of BouyUp does</h2>
+  <p data-i18n="does.p">BouyUp lends to e-commerce sellers through five AI agents. This service is the shared, tamper-proof record the agents, the partner banks and auditors rely on.</p>
+  <div class="wide"><table>
+    <thead data-i18n="does.thead"><tr><th>Feature</th><th>What it does</th><th>Used by</th></tr></thead>
+    <tbody data-i18n="does.tbody">
+      <tr><td><b>Withdrawals</b></td><td>Pays a user's account (mock treasury, unlimited funds) and records the payout on chain, encrypted per bank, with the split between the funding banks.</td><td>Agent 4, or a staff member for a manual payout</td></tr>
+      <tr><td><b>Bank catalog</b></td><td>Regions (Vietnam, China) and provinces; 10 demo banks with limits, a written credit policy and a contract with BouyUp.</td><td>Agent 3 reads the policies, Agent 4 picks the banks</td></tr>
+      <tr><td><b>Audit trail</b></td><td>Stores fingerprints of applications, algorithm output, agent traces and decisions in a chain per case, so a deleted or edited record is detected.</td><td>Agents 1, 2, 3, 5 and the approval gate</td></tr>
+      <tr><td><b>Explorer</b></td><td>Public page with blocks, transactions, node status and encrypted withdrawals, plus a box to decrypt with your own key.</td><td>Banks, auditors, the team</td></tr>
+      <tr><td><b>This overview</b></td><td>The design, every secret, and a bench to check that decryption works.</td><td>The team</td></tr>
+    </tbody>
+  </table></div>
+  <p data-i18n="does.p2">BouyUp is the third party in the middle: it pays the user at once from its own funds, then claims each bank's share back from that bank. The record on chain is the proof of payment named in every bank's contract.</p>
+</section>
+
+<section id="flow">
+  <h2 data-i18n="flow.h2">A withdrawal, step by step</h2>
+  <ol class="steps" data-i18n="flow.steps">
+    <li><b>Agent 4 asks for a payout.</b>It sends the user, the account number, the amount, the region and province, the split between banks in percent, and who is asking. A staff member can do the same by hand, with a reason.</li>
+    <li><b>The split is checked.</b>Each percent has at most 2 decimals and the total is exactly 100.00%. Every bank must exist, be active, belong to the region and have an encryption key. Anything else is refused with a clear error.</li>
+    <li><b>BouyUp pays the account.</b>Today this is a mock treasury that always pays; a real bank transfer plugs in at the same spot.</li>
+    <li><b>The record is cut into pieces and encrypted.</b>One summary piece, plus one piece per bank with that bank's percent and amount. Each piece gets its own key.</li>
+    <li><b>Keys go into unnamed slots.</b>One slot per reader: BouyUp's master key, and each bank. A bank's slot holds the summary key and its own piece key, nothing more.</li>
+    <li><b>The chain stores the sealed record.</b>The encrypted envelope, a fingerprint of every piece and their combined fingerprint. The contract recomputes the combined fingerprint and refuses a mismatch.</li>
+    <li><b>Four nodes keep a copy.</b>The response carries the transaction hash, block, the node that sealed it and how many nodes already hold it.</li>
+    <li><b>Each bank reads and proves its share.</b>With its private key a bank opens its slot, reads its piece and checks it against the fingerprint on chain. Its share stays pending until BouyUp claims it from the bank.</li>
+  </ol>
+</section>
+
+<section id="who">
+  <h2 data-i18n="who.h2">Who can read what</h2>
+  <p data-i18n="who.p">A withdrawal funded 60 / 25.5 / 14.5 by VCB, BIDV and TCB is stored as four pieces:</p>
+  <div class="wide"><table>
+    <thead data-i18n="who.thead"><tr><th>Piece</th><th>Contents</th><th>BouyUp master key</th><th>VCB</th><th>BIDV</th><th>TCB</th><th>Any other bank</th><th>Public</th></tr></thead>
+    <tbody data-i18n="who.tbody">
+      <tr><td><b>Summary</b></td><td>Amount, currency, region, province, account reference, payout reference, who asked, number of banks</td><td class="y">reads</td><td class="y">reads</td><td class="y">reads</td><td class="y">reads</td><td class="n">no</td><td class="n">no</td></tr>
+      <tr><td><b>VCB's share</b></td><td>60%, 300,000,000 VND, contract BU-VCB-2026-01</td><td class="y">reads</td><td class="y">reads</td><td class="n">no</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
+      <tr><td><b>BIDV's share</b></td><td>25.5%, 127,500,000 VND</td><td class="y">reads</td><td class="n">no</td><td class="y">reads</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
+      <tr><td><b>TCB's share</b></td><td>14.5%, 72,500,000 VND</td><td class="y">reads</td><td class="n">no</td><td class="n">no</td><td class="y">reads</td><td class="n">no</td><td class="n">no</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted small" data-i18n="who.note">Everyone can see that a withdrawal happened, when, its id, how many pieces it has and its size. Nothing else.</p>
+</section>
+
+<section id="live">
+  <h2 data-i18n="live.h2">Watch a withdrawal go through the chain</h2>
+  <p data-i18n="live.p">Ten steps from the request to the receipt. Step through them, play them, or send a demo withdrawal and replay it with its real timings.</p>
+  <div class="demo-form" id="demo-form"></div>
+  <div class="live">
+    <div class="livehead">
+      <div class="seg" role="group" id="live-mode" aria-label="Run">
+        <button type="button" data-mode="example" aria-pressed="true"></button>
+        <button type="button" data-mode="mine" aria-pressed="false" disabled></button>
+      </div>
+      <span class="small muted" id="live-src"></span>
+    </div>
+    <div class="stage" id="stage" tabindex="0">
+      <svg id="stage-svg" viewBox="0 0 800 450" role="img"></svg>
+      <div class="tbar"><i id="tbar"></i></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="controls">
+      <button class="btn ghost" id="lv-back" type="button"></button>
+      <button class="btn" id="lv-play" type="button"></button>
+      <button class="btn ghost" id="lv-next" type="button"></button>
+      <div class="dots" id="lv-dots"></div>
+    </div>
+    <div class="caption" id="caption" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="security">
+  <h2 data-i18n="security.h2">Security, technique by technique</h2>
+  <p data-i18n="security.p">Open any row for what it protects against, how it works here, and what the team gains.</p>
+  <div id="tech"></div>
+</section>
+
+<section id="bench">
+  <h2 data-i18n="bench.h2">Try every key</h2>
+  <p data-i18n="bench.p">Pick a withdrawal and run the test: every key from the Secrets section is tried against it. Each bank in the withdrawal should open the summary and its own share, the master key everything, and every other bank nothing.</p>
+  <div class="bench">
+    <div class="row">
+      <label class="f"><span data-i18n="bench.wd">Withdrawal</span><select id="wd"></select></label>
+      <button class="btn brass" id="runall" type="button" data-i18n="bench.runall">Test every key</button>
+    </div>
+    <div class="out" id="allout"></div>
+    <h3 data-i18n="bench.h3">Or decrypt with one key</h3>
+    <div class="row">
+      <label class="f"><span data-i18n="bench.key">Key</span><select id="keypick"></select></label>
+      <button class="btn" id="run1" type="button" data-i18n="bench.run1">Decrypt</button>
+    </div>
+    <label class="f" style="margin-top:10px"><span data-i18n="bench.paste">Or paste any private key (64 hex characters)</span><textarea id="keypaste" data-i18n-ph="bench.pasteph" placeholder="Leave empty to use the key picked above"></textarea></label>
+    <div class="out" id="oneout"></div>
+  </div>
+</section>
+
+<section id="secrets">
+  <h2 data-i18n="secrets.h2">Secrets</h2>
+  <div class="banner" id="demo-banner" data-i18n="secrets.banner">Demo keys, generated for testing. They are shown because <code>showDemoKeys</code> is on in the server config.</div>
+  <div class="banner" id="hidden-banner" hidden data-i18n="secrets.hidden">Private keys are hidden: <code>showDemoKeys</code> is off on this server. Paste a key on the bench to test.</div>
+  <div id="token-box" hidden>
+    <div class="banner seal" data-i18n="secrets.tokenneed">This server needs its API token to show the secrets. It stays in this browser tab only.</div>
+    <div class="row"><label class="f"><span data-i18n="secrets.tokenlabel">API token</span><input type="password" id="token"></label><button class="btn" id="tokenbtn" type="button" data-i18n="secrets.tokenbtn">Show secrets</button></div>
+  </div>
+  <div class="buttons"><button class="btn ghost" id="revealall" type="button" data-i18n="secrets.revealall">Show all private keys</button><button class="btn ghost" id="copyjson" type="button" data-i18n="secrets.copyjson">Copy all as JSON</button></div>
+  <div class="wide"><table id="secrets-table"><thead data-i18n="secrets.thead"><tr><th>Secret</th><th>What it unlocks</th><th>Private key or value</th></tr></thead><tbody></tbody></table></div>
+  <p class="small muted" data-i18n="secrets.note">The <b>master key</b> and the <b>bank keys</b> decrypt withdrawals. The <b>chain signing keys</b> write to the chain but cannot read anything encrypted. The <b>reference salt</b> turns account and staff references back into real ids. In this demo every key lives in the file set by <code>bankKeysFile</code>, created on first start. In production each bank keeps its own private key and BouyUp only stores the bank's public key; the master key belongs in an HSM or KMS.</p>
+</section>
+
+<section id="yourself">
+  <h2 data-i18n="yourself.h2">Decrypt it yourself</h2>
+  <p data-i18n="yourself.p">The bench above asks this server to decrypt. To prove it without trusting the server, decrypt on your own machine. The commands below are filled in with the withdrawal and key picked on the bench.</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="py" data-i18n="yourself.tabpy">Python (no trust in the server)</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="cli" data-i18n="yourself.tabcli">sgchain command</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="curl">curl</button>
+  </div>
+  <div class="codebox"><pre class="code" id="cmd"></pre><button class="mini" id="copycmd" type="button" data-i18n="common.copy">Copy</button></div>
+  <p class="small" id="cmdnote"></p>
+  <h3 data-i18n="yourself.h3">What you get back</h3>
+  <ul data-i18n="yourself.ul">
+    <li>A bank key: the summary and that bank's share, each marked when its fingerprint matches the one on chain.</li>
+    <li>The master key: every piece.</li>
+    <li>Any other key: "this key opens none of the slots". That refusal is the protection working.</li>
+  </ul>
+</section>
+
+<section id="endpoints">
+  <h2 data-i18n="endpoints.h2">Endpoints</h2>
+  <div class="wide"><table>
+    <thead data-i18n="endpoints.thead"><tr><th>Endpoint</th><th>Purpose</th><th>Needs token</th></tr></thead>
+    <tbody id="endpoints-body"></tbody>
+  </table></div>
+</section>
+
+<section id="limits">
+  <h2 data-i18n="limits.h2">Limits and config</h2>
+  <h3 data-i18n="limits.h3a">What is not hidden</h3>
+  <ul data-i18n="limits.ul">
+    <li>That a withdrawal happened, when, its id, the number of pieces (banks + 1) and the record size.</li>
+    <li>If a key leaks, every record locked to it stays readable for good: a chain cannot be wiped. The master key is the most sensitive secret.</li>
+    <li>A bank sees only its own share, so it cannot check alone that the shares add up to 100%. The service checks before writing, and anyone with the master key can re-check with <code>GET /v1/withdrawals/{id}/verify</code>.</li>
+    <li>The payout is a mock treasury; real transfers and reimbursement claims are outside this service.</li>
+  </ul>
+  <h3 data-i18n="limits.h3b">Config you may touch</h3>
+  <div class="wide"><table>
+    <thead data-i18n="limits.thead"><tr><th>Setting</th><th>Where</th><th>What it does</th></tr></thead>
+    <tbody data-i18n="limits.tbody">
+      <tr><td><code>showDemoKeys</code></td><td><code>configs/*.json</code> or <code>SG_SHOW_DEMO_KEYS</code></td><td>On by default. Prints full keys on this page and in <code>/v1/overview</code>. Turn off before real keys are used.</td></tr>
+      <tr><td><code>bankKeysFile</code></td><td><code>configs/*.json</code></td><td>Where the master and bank keys are stored. Created on first start. Keep it: withdrawals locked to these keys can only be read with them.</td></tr>
+      <tr><td><code>apiToken</code></td><td><code>configs/*.json</code> or <code>SG_API_TOKEN</code></td><td>Protects <code>/v1/*</code>, including the secrets. Set it on any server reachable from the internet.</td></tr>
+      <tr><td><code>node.peers</code></td><td><code>configs/fisco.json</code></td><td>The other nodes; used to show which nodes hold each transaction.</td></tr>
+    </tbody>
+  </table></div>
+  <h3 data-i18n="limits.h3c">When a bank changes its key</h3>
+  <p data-i18n="limits.keychange">The bank sends its new public key to <code>PUT /v1/banks/{code}/public-key</code>. New withdrawals use it; older ones stay readable with the key that was current then. Keeping old keys is the bank's job.</p>
+</section>
+</main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const short = h => h && h.length > 22 ? h.slice(0,10)+'…'+h.slice(-8) : (h||'');
+const minor = {VND:0, CNY:2};
+const money = (a,c) => { const d = minor[c] ?? 0; return (a/Math.pow(10,d)).toLocaleString(LANG === 'vi' ? 'vi-VN' : 'en-US',{minimumFractionDigits:d,maximumFractionDigits:d})+' '+(c||''); };
+const COLORS = ['#1E7A4F','#9A6F14','#2F6FB0','#A8321F','#6B4FA0','#3C8C8C'];
+let TOKEN = ''; try { TOKEN = sessionStorage.getItem('bouyup-token') || ''; } catch(e) {}
+let OVERVIEW = null, WDS = [], KEYS = [], CHOICE = {wd:'', key:''}, TAB = 'py';
+let CHAIN = null, CHAIN_ERR = '', HERO = {id:'', opened:null}, LAST_ALL = null, LAST_ONE = null, SECRETS_STATE = 'loading';
+
+/* ---------- language ---------- */
+let LANG = 'en';
+const VI_STATIC = {
+  'toc.top':'Ý tưởng', 'toc.does':'Phần này làm gì', 'toc.flow':'Một lệnh rút tiền, từng bước', 'toc.who':'Ai đọc được gì',
+  'toc.security':'Bảo mật, từng kỹ thuật', 'toc.bench':'Thử mọi khóa', 'toc.secrets':'Khóa bí mật', 'toc.yourself':'Tự giải mã',
+  'toc.endpoints':'Endpoint', 'toc.limits':'Giới hạn và cấu hình',
+  'hero.h1':'Mỗi ngân hàng chỉ thấy phần của mình. Không ai sửa được.',
+  'hero.lead':'Đây là dịch vụ blockchain của BouyUp. Agent 4 chi trả cho người dùng, khoản chi được chia giữa các ngân hàng đối tác, và bản ghi được đưa lên chuỗi FISCO BCOS 4 node. Bản ghi được mã hóa để mỗi ngân hàng chỉ đọc được phần của mình và chứng minh phần đó với bất kỳ ai.',
+  'hero.b1':'Thử giải mã một lệnh rút tiền', 'hero.b2':'Mở trình khám phá chuỗi', 'hero.b3':'Tài liệu API',
+  'hero.envhead':'Lệnh rút tiền mới nhất trên chuỗi, đúng như mọi thành viên nhìn thấy',
+  'hero.envnote':'Các phần bị khóa và các ô khóa không tên: chuỗi chỉ hiển thị đến vậy. Chọn một khóa ở mục <a href="#bench">Thử mọi khóa</a> để xem khóa đó mở được phần nào.',
+  'does.h2':'Phần này của BouyUp làm gì',
+  'does.p':'BouyUp cho người bán hàng thương mại điện tử vay vốn thông qua năm AI agent. Dịch vụ này là bản ghi dùng chung, không thể sửa đổi, mà các agent, ngân hàng đối tác và kiểm toán viên cùng dựa vào.',
+  'does.thead':'<tr><th>Tính năng</th><th>Chức năng</th><th>Ai dùng</th></tr>',
+  'does.tbody':`<tr><td><b>Rút tiền</b></td><td>Chi trả vào tài khoản người dùng (kho quỹ giả lập, tiền không giới hạn) và ghi khoản chi lên chuỗi, mã hóa riêng cho từng ngân hàng, kèm tỷ lệ chia giữa các ngân hàng cấp vốn.</td><td>Agent 4, hoặc nhân viên khi chi trả thủ công</td></tr>
+    <tr><td><b>Danh mục ngân hàng</b></td><td>Khu vực (Việt Nam, Trung Quốc) và tỉnh/thành; 10 ngân hàng mẫu với hạn mức, chính sách tín dụng bằng văn bản và hợp đồng với BouyUp.</td><td>Agent 3 đọc chính sách, Agent 4 chọn ngân hàng</td></tr>
+    <tr><td><b>Nhật ký kiểm toán</b></td><td>Lưu dấu vân tay (hash) của hồ sơ vay, kết quả thuật toán, vết xử lý của agent và các quyết định thành một chuỗi cho từng hồ sơ, nên bản ghi bị xóa hoặc bị sửa sẽ bị phát hiện.</td><td>Agent 1, 2, 3, 5 và bước phê duyệt</td></tr>
+    <tr><td><b>Explorer</b></td><td>Trang công khai hiển thị block, giao dịch, trạng thái node và các lệnh rút tiền đã mã hóa, kèm ô để giải mã bằng khóa của bạn.</td><td>Ngân hàng, kiểm toán viên, cả nhóm</td></tr>
+    <tr><td><b>Trang tổng quan này</b></td><td>Thiết kế, mọi khóa bí mật, và một bàn thử để kiểm tra việc giải mã có hoạt động.</td><td>Cả nhóm</td></tr>`,
+  'does.p2':'BouyUp là bên thứ ba đứng giữa: BouyUp trả ngay cho người dùng bằng tiền của mình, sau đó thu lại phần của từng ngân hàng từ chính ngân hàng đó. Bản ghi trên chuỗi là bằng chứng thanh toán được nêu trong hợp đồng với mỗi ngân hàng.',
+  'flow.h2':'Một lệnh rút tiền, từng bước',
+  'flow.steps':`<li><b>Agent 4 yêu cầu chi trả.</b>Agent gửi người dùng, số tài khoản, số tiền, khu vực và tỉnh/thành, tỷ lệ chia giữa các ngân hàng theo phần trăm, và ai đang yêu cầu. Nhân viên cũng có thể làm thủ công, kèm lý do.</li>
+    <li><b>Kiểm tra tỷ lệ chia.</b>Mỗi phần trăm có tối đa 2 chữ số thập phân và tổng phải đúng 100.00%. Mỗi ngân hàng phải tồn tại, đang hoạt động, thuộc khu vực đó và có khóa mã hóa. Mọi trường hợp khác bị từ chối kèm thông báo lỗi rõ ràng.</li>
+    <li><b>BouyUp chi trả vào tài khoản.</b>Hiện tại là kho quỹ giả lập luôn chi trả thành công; chuyển khoản ngân hàng thật sẽ gắn vào đúng chỗ này.</li>
+    <li><b>Bản ghi được chia thành nhiều phần và mã hóa.</b>Một phần tóm tắt, cộng với mỗi ngân hàng một phần chứa tỷ lệ và số tiền của ngân hàng đó. Mỗi phần có khóa riêng.</li>
+    <li><b>Khóa được đặt vào các ô không tên.</b>Mỗi người đọc một ô: khóa chủ của BouyUp và từng ngân hàng. Ô của một ngân hàng chỉ chứa khóa của phần tóm tắt và khóa phần của chính ngân hàng đó.</li>
+    <li><b>Chuỗi lưu bản ghi đã niêm phong.</b>Gồm phong bì đã mã hóa, dấu vân tay của từng phần và dấu vân tay tổng hợp. Hợp đồng thông minh tự tính lại dấu vân tay tổng hợp và từ chối nếu không khớp.</li>
+    <li><b>Bốn node cùng giữ một bản sao.</b>Phản hồi trả về mã giao dịch (tx hash), số block, node đã niêm phong và số node đã có bản ghi.</li>
+    <li><b>Mỗi ngân hàng đọc và chứng minh phần của mình.</b>Dùng khóa riêng, ngân hàng mở ô của mình, đọc phần của mình và đối chiếu với dấu vân tay trên chuỗi. Phần đó ở trạng thái chờ cho đến khi BouyUp thu lại từ ngân hàng.</li>`,
+  'who.h2':'Ai đọc được gì',
+  'who.p':'Một lệnh rút tiền do VCB, BIDV và TCB cấp vốn theo tỷ lệ 60 / 25.5 / 14.5 được lưu thành bốn phần:',
+  'who.thead':'<tr><th>Phần</th><th>Nội dung</th><th>Khóa chủ BouyUp</th><th>VCB</th><th>BIDV</th><th>TCB</th><th>Ngân hàng khác</th><th>Công khai</th></tr>',
+  'who.tbody':`<tr><td><b>Tóm tắt</b></td><td>Số tiền, loại tiền, khu vực, tỉnh/thành, mã tham chiếu tài khoản, mã tham chiếu chi trả, người yêu cầu, số ngân hàng</td><td class="y">đọc được</td><td class="y">đọc được</td><td class="y">đọc được</td><td class="y">đọc được</td><td class="n">không</td><td class="n">không</td></tr>
+    <tr><td><b>Phần của VCB</b></td><td>60%, 300.000.000 VND, hợp đồng BU-VCB-2026-01</td><td class="y">đọc được</td><td class="y">đọc được</td><td class="n">không</td><td class="n">không</td><td class="n">không</td><td class="n">không</td></tr>
+    <tr><td><b>Phần của BIDV</b></td><td>25.5%, 127.500.000 VND</td><td class="y">đọc được</td><td class="n">không</td><td class="y">đọc được</td><td class="n">không</td><td class="n">không</td><td class="n">không</td></tr>
+    <tr><td><b>Phần của TCB</b></td><td>14.5%, 72.500.000 VND</td><td class="y">đọc được</td><td class="n">không</td><td class="n">không</td><td class="y">đọc được</td><td class="n">không</td><td class="n">không</td></tr>`,
+  'who.note':'Ai cũng thấy được việc có một lệnh rút tiền, thời điểm, mã lệnh, số phần và kích thước. Ngoài ra không thấy gì.',
+  'security.h2':'Bảo mật, từng kỹ thuật',
+  'security.p':'Mở từng dòng để xem kỹ thuật đó chống lại điều gì, hoạt động thế nào ở đây, và nhóm được lợi gì.',
+  'bench.h2':'Thử mọi khóa',
+  'bench.p':'Chọn một lệnh rút tiền và chạy thử: mọi khóa trong mục Khóa bí mật sẽ được thử với lệnh đó. Mỗi ngân hàng có trong lệnh phải mở được phần tóm tắt và phần của mình, khóa chủ mở được tất cả, còn các ngân hàng khác không mở được gì.',
+  'bench.wd':'Lệnh rút tiền', 'bench.runall':'Thử mọi khóa', 'bench.h3':'Hoặc giải mã bằng một khóa', 'bench.key':'Khóa', 'bench.run1':'Giải mã',
+  'bench.paste':'Hoặc dán một khóa riêng bất kỳ (64 ký tự hex)', 'bench.pasteph':'Để trống để dùng khóa đã chọn ở trên',
+  'secrets.h2':'Khóa bí mật',
+  'secrets.banner':'Khóa demo, được tạo ra để thử nghiệm. Chúng được hiển thị vì <code>showDemoKeys</code> đang bật trong cấu hình server.',
+  'secrets.hidden':'Khóa riêng đang bị ẩn: <code>showDemoKeys</code> đang tắt trên server này. Hãy dán một khóa vào bàn thử để kiểm tra.',
+  'secrets.tokenneed':'Server này cần token API để hiển thị khóa bí mật. Token chỉ được giữ trong tab trình duyệt này.',
+  'secrets.tokenlabel':'Token API', 'secrets.tokenbtn':'Hiện khóa bí mật', 'secrets.revealall':'Hiện tất cả khóa riêng', 'secrets.copyjson':'Sao chép tất cả dạng JSON',
+  'secrets.thead':'<tr><th>Khóa bí mật</th><th>Mở được gì</th><th>Khóa riêng hoặc giá trị</th></tr>',
+  'secrets.note':'<b>Khóa chủ</b> và <b>khóa ngân hàng</b> giải mã được lệnh rút tiền. <b>Khóa ký của chuỗi</b> ghi được lên chuỗi nhưng không đọc được dữ liệu đã mã hóa. <b>Salt tham chiếu</b> giúp đổi mã tham chiếu tài khoản và nhân viên về mã thật. Trong bản demo, mọi khóa nằm trong file do <code>bankKeysFile</code> chỉ định, được tạo ở lần chạy đầu tiên. Khi chạy thật, mỗi ngân hàng tự giữ khóa riêng và BouyUp chỉ lưu khóa công khai của ngân hàng; khóa chủ phải nằm trong HSM hoặc KMS.',
+  'yourself.h2':'Tự giải mã',
+  'yourself.p':'Bàn thử ở trên nhờ server này giải mã. Để kiểm chứng mà không cần tin server, hãy giải mã trên máy của bạn. Các lệnh dưới đây đã điền sẵn lệnh rút tiền và khóa bạn chọn ở bàn thử.',
+  'yourself.tabpy':'Python (không cần tin server)', 'yourself.tabcli':'Lệnh sgchain', 'common.copy':'Sao chép',
+  'yourself.h3':'Kết quả nhận được',
+  'yourself.ul':`<li>Khóa ngân hàng: phần tóm tắt và phần của ngân hàng đó, mỗi phần được đánh dấu khi dấu vân tay khớp với dấu vân tay trên chuỗi.</li>
+    <li>Khóa chủ: mọi phần.</li>
+    <li>Khóa khác: "this key opens none of the slots" (khóa này không mở được ô nào). Việc bị từ chối chính là cơ chế bảo vệ đang hoạt động.</li>`,
+  'endpoints.h2':'Endpoint',
+  'endpoints.thead':'<tr><th>Endpoint</th><th>Mục đích</th><th>Cần token</th></tr>',
+  'limits.h2':'Giới hạn và cấu hình', 'limits.h3a':'Những gì không bị ẩn',
+  'limits.ul':`<li>Việc có một lệnh rút tiền, thời điểm, mã lệnh, số phần (số ngân hàng + 1) và kích thước bản ghi.</li>
+    <li>Nếu một khóa bị lộ, mọi bản ghi khóa bằng nó sẽ đọc được mãi mãi: dữ liệu trên chuỗi không thể xóa. Khóa chủ là bí mật nhạy cảm nhất.</li>
+    <li>Mỗi ngân hàng chỉ thấy phần của mình, nên không thể tự kiểm tra tổng các phần có bằng 100% hay không. Dịch vụ kiểm tra trước khi ghi, và ai có khóa chủ có thể kiểm tra lại bằng <code>GET /v1/withdrawals/{id}/verify</code>.</li>
+    <li>Khoản chi trả dùng kho quỹ giả lập; chuyển khoản thật và việc thu hồi tiền từ ngân hàng nằm ngoài dịch vụ này.</li>`,
+  'limits.h3b':'Cấu hình có thể chỉnh',
+  'limits.thead':'<tr><th>Thiết lập</th><th>Ở đâu</th><th>Tác dụng</th></tr>',
+  'limits.tbody':`<tr><td><code>showDemoKeys</code></td><td><code>configs/*.json</code> hoặc <code>SG_SHOW_DEMO_KEYS</code></td><td>Bật mặc định. Hiển thị đầy đủ khóa trên trang này và trong <code>/v1/overview</code>. Hãy tắt trước khi dùng khóa thật.</td></tr>
+    <tr><td><code>bankKeysFile</code></td><td><code>configs/*.json</code></td><td>Nơi lưu khóa chủ và khóa ngân hàng, được tạo ở lần chạy đầu tiên. Hãy giữ file này: lệnh rút tiền khóa bằng các khóa này chỉ đọc được bằng chính chúng.</td></tr>
+    <tr><td><code>apiToken</code></td><td><code>configs/*.json</code> hoặc <code>SG_API_TOKEN</code></td><td>Bảo vệ <code>/v1/*</code>, kể cả khóa bí mật. Hãy đặt token trên mọi server truy cập được từ internet.</td></tr>
+    <tr><td><code>node.peers</code></td><td><code>configs/fisco.json</code></td><td>Các node còn lại; dùng để hiển thị node nào đang giữ từng giao dịch.</td></tr>`,
+  'limits.h3c':'Khi ngân hàng đổi khóa',
+  'limits.keychange':'Ngân hàng gửi khóa công khai mới đến <code>PUT /v1/banks/{code}/public-key</code>. Lệnh rút tiền mới dùng khóa mới; lệnh cũ vẫn đọc được bằng khóa đang dùng lúc đó. Việc giữ khóa cũ là trách nhiệm của ngân hàng.',
+};
+
+const TX = {
+  en: {
+    title:'BouyUp Chain Overview', dark:'Switch to dark', light:'Switch to light',
+    connecting:'Connecting to the chain…', loading:'Loading…',
+    nodes:(u,n)=>`${u} of ${n} nodes online`, block:n=>`Block ${n}`, recorded:n=>`${n} withdrawal${n===1?'':'s'} recorded`,
+    fisco:g=>`FISCO BCOS, group ${g}`, mockLedger:'In-memory test ledger', unreachable:m=>`Chain not reachable: ${m}`,
+    noWd:'No withdrawal on the chain yet. Create one with POST /v1/withdrawals (or run scripts/demo.sh), then reload this page.',
+    summary:'Summary', bankShareN:i=>`Bank share ${i}`, shareOf:b=>`${b}'s share`, sumLine:(a,n)=>`${a}, ${n} banks`,
+    fpOk:'✓ matches its fingerprint', fpBad:'✗ fingerprint mismatch', slots:'Key slots:', slotTitle:'unnamed key slot',
+    envMeta:(b,n)=>`${b} bytes, block ${n}`, wdOpt:(id,b,n)=>`${id}, block ${b}, ${n} bank${n===1?'':'s'}`, noWdOpt:'No withdrawals yet',
+    tokenNeeded:'Enter the API token above to see the secrets.',
+    groups:['Master key: reads everything','Bank keys: each reads the summary and its own share','Chain and service secrets: cannot decrypt withdrawals'],
+    bankUnlocks:o=>`The summary and ${o}'s own share`, bankKey:c=>`${c} encryption key`, earlier:', earlier key', earlierP:' (earlier)',
+    show:'Show', hide:'Hide', copy:'Copy', publicKey:'Public key:', hidden:'hidden', noKeysOpt:'No keys shown: paste one below',
+    copied:w=>`${w} copied`, copyFail:'Copy failed: select and copy by hand', wCommand:'Command', wAll:'All secrets',
+    pickBoth:'Pick a withdrawal and a key, or paste a key.', decrypting:'Decrypting…', refusedMsg:null,
+    readsN:(a,b)=>`This key reads ${a} of ${b} pieces`, noWdTest:'No withdrawal to test yet.',
+    noKeysTest:'No keys are shown on this server (showDemoKeys is off, or the token is missing). Use "Decrypt with one key" with a pasted key.',
+    trying:n=>`Trying ${n} keys…`, refused:'refused', sAll:'all pieces', sOwn:'summary and own share', sNothing:'nothing',
+    asExpected:'as expected', unexpected:'unexpected', pass:'✓ Every key behaves as designed', fail:'✗ Something did not behave as designed',
+    tried:(n,id,b)=>`${n} keys tried on ${id}; banks in it: ${b}`, unknown:'unknown', benchHead:['Key','Result','Should read','Check'],
+    kv:['Amount','Region','Requested by','Banks in it','Account reference','Payout reference'],
+    agent:(id,v)=>`${id} version ${v}`, staff:r=>`staff, role ${r}`, contract:'contract', fpMatches:'fingerprint matches', fpMismatch:'fingerprint mismatch',
+    stops:'stops', techHead:['Protects against','How it works here','What we gain'], yes:'yes', no:'no',
+    notes:{
+      py:'Downloads only the public record and decrypts on your machine. It also checks every piece against its fingerprint and the Merkle root. On Windows PowerShell type <code>curl.exe</code> instead of <code>curl</code> and <code>python</code> instead of <code>python3</code>.',
+      cli:'Same as the script, built into the service binary (sgchain.exe on Windows). The key never leaves your machine.',
+      curl:'Asks this server to decrypt. Quickest, but you trust the server for the answer. In PowerShell use curl.exe and escape the inner quotes.'},
+  },
+  vi: {
+    title:'Tổng quan BouyUp Chain', dark:'Nền tối', light:'Nền sáng',
+    connecting:'Đang kết nối tới chuỗi…', loading:'Đang tải…',
+    nodes:(u,n)=>`${u}/${n} node đang chạy`, block:n=>`Block ${n}`, recorded:n=>`${n} lệnh rút tiền đã ghi`,
+    fisco:g=>`FISCO BCOS, nhóm ${g}`, mockLedger:'Sổ cái thử nghiệm trong bộ nhớ', unreachable:m=>`Không kết nối được chuỗi: ${m}`,
+    noWd:'Chưa có lệnh rút tiền nào trên chuỗi. Hãy tạo một lệnh bằng POST /v1/withdrawals (hoặc chạy scripts/demo.sh), rồi tải lại trang.',
+    summary:'Tóm tắt', bankShareN:i=>`Phần ngân hàng ${i}`, shareOf:b=>`Phần của ${b}`, sumLine:(a,n)=>`${a}, ${n} ngân hàng`,
+    fpOk:'✓ khớp dấu vân tay', fpBad:'✗ không khớp dấu vân tay', slots:'Ô khóa:', slotTitle:'ô khóa không tên',
+    envMeta:(b,n)=>`${b} byte, block ${n}`, wdOpt:(id,b,n)=>`${id}, block ${b}, ${n} ngân hàng`, noWdOpt:'Chưa có lệnh rút tiền',
+    tokenNeeded:'Nhập token API ở trên để xem khóa bí mật.',
+    groups:['Khóa chủ: đọc được tất cả','Khóa ngân hàng: mỗi khóa đọc được phần tóm tắt và phần của chính ngân hàng đó','Khóa của chuỗi và dịch vụ: không giải mã được lệnh rút tiền'],
+    bankUnlocks:o=>`Phần tóm tắt và phần của ${o}`, bankKey:c=>`Khóa mã hóa ${c}`, earlier:', khóa cũ', earlierP:' (khóa cũ)',
+    show:'Hiện', hide:'Ẩn', copy:'Sao chép', publicKey:'Khóa công khai:', hidden:'đã ẩn', noKeysOpt:'Không có khóa hiển thị: hãy dán khóa ở dưới',
+    copied:w=>`Đã sao chép ${w}`, copyFail:'Không sao chép được: hãy chọn và sao chép thủ công', wCommand:'lệnh', wAll:'tất cả khóa bí mật',
+    pickBoth:'Chọn một lệnh rút tiền và một khóa, hoặc dán một khóa.', decrypting:'Đang giải mã…', refusedMsg:'Khóa này không mở được ô nào',
+    readsN:(a,b)=>`Khóa này đọc được ${a}/${b} phần`, noWdTest:'Chưa có lệnh rút tiền để thử.',
+    noKeysTest:'Server này không hiển thị khóa nào (showDemoKeys đang tắt, hoặc thiếu token). Hãy dùng "Hoặc giải mã bằng một khóa" với khóa bạn dán vào.',
+    trying:n=>`Đang thử ${n} khóa…`, refused:'bị từ chối', sAll:'mọi phần', sOwn:'tóm tắt và phần của mình', sNothing:'không gì',
+    asExpected:'đúng thiết kế', unexpected:'bất thường', pass:'✓ Mọi khóa hoạt động đúng thiết kế', fail:'✗ Có khóa không hoạt động đúng thiết kế',
+    tried:(n,id,b)=>`Đã thử ${n} khóa trên ${id}; ngân hàng trong lệnh: ${b}`, unknown:'không rõ', benchHead:['Khóa','Kết quả','Lẽ ra đọc được','Đánh giá'],
+    kv:['Số tiền','Khu vực','Người yêu cầu','Số ngân hàng','Mã tham chiếu tài khoản','Mã tham chiếu chi trả'],
+    agent:(id,v)=>`${id} phiên bản ${v}`, staff:r=>`nhân viên, vai trò ${r}`, contract:'hợp đồng', fpMatches:'khớp dấu vân tay', fpMismatch:'không khớp dấu vân tay',
+    stops:'chống', techHead:['Chống lại','Cách hoạt động ở đây','Lợi ích'], yes:'có', no:'không',
+    notes:{
+      py:'Chỉ tải bản ghi công khai và giải mã ngay trên máy bạn. Script cũng kiểm tra từng phần với dấu vân tay và gốc Merkle. Trên Windows PowerShell, gõ <code>curl.exe</code> thay cho <code>curl</code> và <code>python</code> thay cho <code>python3</code>.',
+      cli:'Giống script, nhưng có sẵn trong file chạy của dịch vụ (sgchain.exe trên Windows). Khóa không bao giờ rời khỏi máy bạn.',
+      curl:'Nhờ server này giải mã. Nhanh nhất, nhưng bạn phải tin kết quả server trả về. Trong PowerShell dùng curl.exe và escape dấu ngoặc kép bên trong.'},
+  },
+};
+const t = () => TX[LANG];
+
+/* server-provided secret descriptions, translated by name */
+const VI_SECRETS = [
+  [/master key/i, 'Khóa chủ BouyUp', 'MỌI phần của MỌI lệnh rút tiền (khóa chủ có một ô trong tất cả các lệnh)'],
+  [/admin signing key/i, 'Khóa ký admin của chuỗi', 'triển khai hợp đồng và cấp quyền'],
+  [/operator signing key/i, 'Khóa ký operator của chuỗi', 'ghi lệnh rút tiền và dấu vân tay kiểm toán (không đọc được chúng)'],
+  [/reference salt/i, 'Salt tham chiếu (refSalt)', 'đối chiếu accountRef hoặc staffRef về người dùng/tài khoản hoặc mã nhân viên (mã tham chiếu là HMAC-SHA256 với salt này)'],
+  [/api token/i, 'Token API', 'gọi các endpoint /v1/*, kể cả xem khóa bí mật'],
+];
+const viHeld = h => String(h || '').replace(/production: an /g, 'production: ').replace(/production:/g, 'khi chạy thật:').replace(/ or generated/g, ' hoặc tự tạo')
+  .replace(/never on a server disk/g, 'không bao giờ nằm trên ổ đĩa server').replace(/^config /, 'cấu hình ').replace(/the bank itself \(BouyUp only knows the public key\)/, 'chính ngân hàng (BouyUp chỉ biết khóa công khai)');
+function secretText(s){
+  if (LANG !== 'vi') return {name:s.name, unlocks:s.unlocks, held:s.heldBy};
+  const m = VI_SECRETS.find(([re]) => re.test(s.name));
+  return {name: m ? m[1] : s.name, unlocks: m ? m[2] : s.unlocks, held: viHeld(s.heldBy)};
+}
+const keyName = k => { const c = (k.name.match(/^(\S+) encryption key/) || [])[1]; return c ? t().bankKey(c) : secretText(k).name; };
+
+const STATIC_EN = {};
+document.querySelectorAll('[data-i18n]').forEach(el => STATIC_EN[el.dataset.i18n] = el.innerHTML);
+document.querySelectorAll('[data-i18n-ph]').forEach(el => STATIC_EN[el.dataset.i18nPh] = el.getAttribute('placeholder'));
+
+function setLang(l, save){
+  LANG = l === 'vi' ? 'vi' : 'en';
+  document.documentElement.lang = LANG; document.title = t().title;
+  document.querySelectorAll('[data-i18n]').forEach(el => { const k = el.dataset.i18n; el.innerHTML = (LANG === 'vi' && VI_STATIC[k]) || STATIC_EN[k]; });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { const k = el.dataset.i18nPh; el.setAttribute('placeholder', (LANG === 'vi' && VI_STATIC[k]) || STATIC_EN[k]); });
+  document.querySelectorAll('[data-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === LANG)));
+  if (save) { try { localStorage.setItem('bouyup-lang', LANG); } catch(e) {} const u = new URL(location.href); u.searchParams.set('lang', LANG); history.replaceState(null, '', u); }
+  themeLabel(); renderTech(); renderEP(); renderStatus(); fillWithdrawals(); renderHero(); renderSecrets(); renderAll(); renderOne(); renderCmd(); renderDemoForm(); renderLive();
+}
+document.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => setLang(b.dataset.lang, true));
+
+function toast(m){ const el = $('#toast'); el.textContent = m; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'), 1400); }
+function copy(text, what){ (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(()=>toast(t().copied(what)), ()=>toast(t().copyFail)); }
+async function get(path, auth){ const h = {Accept:'application/json'}; if (auth && TOKEN) h.Authorization = 'Bearer ' + TOKEN;
+  const r = await fetch(path, {headers:h}); const j = await r.json().catch(()=>({})); if (!r.ok) { const e = new Error(j.error?.message || ('HTTP '+r.status)); e.status = r.status; throw e; } return j; }
+async function decrypt(id, key){ const r = await fetch('../explorer/api/decrypt', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({withdrawalId:id, privateKey:key})});
+  const j = await r.json().catch(()=>({})); return {ok:r.ok, status:r.status, body:j}; }
+
+/* theme */
+const root = document.documentElement;
+const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+function themeLabel(){ $('#theme').textContent = isDark() ? t().light : t().dark; }
+try { const th = localStorage.getItem('bouyup-theme'); if (th) root.dataset.theme = th; } catch(e) {}
+$('#theme').onclick = () => { root.dataset.theme = isDark() ? 'light' : 'dark'; try { localStorage.setItem('bouyup-theme', root.dataset.theme); } catch(e) {} themeLabel(); };
+
+/* section index highlight */
+(function(){ const links = [...document.querySelectorAll('#toc a')]; const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { links.forEach(l => l.classList.remove('on')); map.get(e.target.id)?.classList.add('on'); } }), {rootMargin:'-30% 0px -65% 0px'});
+  document.querySelectorAll('main section').forEach(s => io.observe(s));
+})();
+
+/* security techniques: [title, threat, how, gain] per language */
+const TECH = {
+ en: [
+  ['A consortium blockchain (FISCO BCOS v2.11.1, 4 nodes)', 'one party rewriting history',
+   'Every member runs a node with the full ledger. Blocks are agreed by PBFT consensus: a block needs two thirds of the sealer nodes, so one broken or dishonest node changes nothing.',
+   'Banks, auditors and arbitrators can trust the record without trusting BouyUp\'s database.'],
+  ['Signed transactions and contract roles', 'anyone writing records',
+   'Only the BouyUp operator key may record withdrawals and audit fingerprints; only the admin key may grant roles. The contracts check this on every write.',
+   'A stolen API token alone cannot forge chain records.'],
+  ['Envelope encryption per bank (X25519, HKDF-SHA256, AES-256-GCM)', 'banks seeing each other\'s volumes',
+   'Each piece has its own random 256-bit key. The keys sit in slots, one per reader, each locked with a key only that reader can compute from its private key. Slots have no names and are shuffled.',
+   'The record is public and permanent, yet each bank learns only its own share; the chain does not even reveal which banks took part.'],
+  ['Fingerprints of every piece, with a Merkle root', 'BouyUp or anyone else showing different contents later',
+   'SHA-256 of each piece\'s readable text (with a random salt) is stored on chain, plus their Merkle root, which the contract recomputes. AES-GCM alone would let a crafted record decrypt differently under different keys; only one text matches the fingerprint.',
+   'A bank proves its share to an arbitrator by showing just that piece, without handing over its key.'],
+  ['Records bound to their withdrawal id', 'pieces copied between withdrawals',
+   'Every piece and slot is encrypted with its withdrawal id as associated data; moved elsewhere it no longer opens.',
+   'A valid share from one withdrawal cannot be passed off as part of another.'],
+  ['Salted references instead of personal data', 'personal data on a shared ledger',
+   'User id with account number, and staff ids, become HMAC-SHA256 references with BouyUp\'s secret salt, and sit inside the encrypted summary.',
+   'No personal data on chain; only BouyUp can match a reference back to a person.'],
+  ['Audit trail hash chain', 'deleting or reordering agent records',
+   'Each case keeps a chain: every new record\'s head is keccak256 of the previous head, its kind, its fingerprint and its time.',
+   'GET /v1/audit/anchors/{case}/verify shows exactly where a record went missing or was changed.'],
+  ['Safe retries', 'paying twice',
+   'A requestId makes a withdrawal idempotent: a retry returns the same record; reusing the id for different data is refused.',
+   'Agent 4 can retry on timeouts without risk.'],
+  ['Keys owned by the banks', 'BouyUp holding banks\' secrets in production',
+   'A bank keeps its private key and registers only its public key. When it changes key, new records use the new one and old ones keep the old one. Nothing on chain shows that a key changed.',
+   'In production BouyUp never needs a bank\'s private key; only its own master key, which belongs in an HSM or KMS.'],
+ ],
+ vi: [
+  ['Blockchain liên minh (FISCO BCOS v2.11.1, 4 node)', 'một bên tự viết lại lịch sử',
+   'Mỗi thành viên chạy một node giữ toàn bộ sổ cái. Block được chốt bằng đồng thuận PBFT: cần hai phần ba số node niêm phong đồng ý, nên một node bị hỏng hoặc gian lận không thay đổi được gì.',
+   'Ngân hàng, kiểm toán viên và trọng tài tin được bản ghi mà không cần tin cơ sở dữ liệu của BouyUp.'],
+  ['Giao dịch có chữ ký và phân quyền trong hợp đồng', 'người không có quyền ghi bản ghi',
+   'Chỉ khóa operator của BouyUp được ghi lệnh rút tiền và dấu vân tay kiểm toán; chỉ khóa admin được cấp quyền. Hợp đồng kiểm tra điều này ở mỗi lần ghi.',
+   'Chỉ lấy cắp được token API thì vẫn không giả mạo được bản ghi trên chuỗi.'],
+  ['Mã hóa phong bì cho từng ngân hàng (X25519, HKDF-SHA256, AES-256-GCM)', 'ngân hàng nhìn thấy khối lượng của nhau',
+   'Mỗi phần có một khóa ngẫu nhiên 256-bit riêng. Các khóa nằm trong các ô, mỗi người đọc một ô, mỗi ô được khóa bằng một khóa mà chỉ người đọc đó tính ra được từ khóa riêng của mình. Các ô không có tên và được xáo trộn thứ tự.',
+   'Bản ghi công khai và tồn tại vĩnh viễn, nhưng mỗi ngân hàng chỉ biết phần của mình; chuỗi thậm chí không tiết lộ những ngân hàng nào tham gia.'],
+  ['Dấu vân tay của từng phần, kèm gốc Merkle', 'BouyUp hay bất kỳ ai đưa ra nội dung khác về sau',
+   'SHA-256 của nội dung từng phần (kèm salt ngẫu nhiên) được lưu trên chuỗi, cùng gốc Merkle của chúng, và hợp đồng tự tính lại gốc này. Nếu chỉ dùng AES-GCM, một bản ghi được tạo có chủ đích có thể giải mã ra nội dung khác nhau với các khóa khác nhau; chỉ một nội dung khớp với dấu vân tay.',
+   'Ngân hàng chứng minh phần của mình với trọng tài chỉ bằng cách đưa ra đúng phần đó, không cần giao khóa.'],
+  ['Bản ghi gắn với mã lệnh rút tiền', 'sao chép các phần giữa các lệnh rút tiền',
+   'Mọi phần và mọi ô đều được mã hóa với mã lệnh rút tiền làm dữ liệu liên kết (associated data); chuyển sang lệnh khác là không mở được nữa.',
+   'Không thể lấy một phần hợp lệ của lệnh này để giả làm phần của lệnh khác.'],
+  ['Mã tham chiếu có salt thay cho dữ liệu cá nhân', 'dữ liệu cá nhân nằm trên sổ cái dùng chung',
+   'Mã người dùng kèm số tài khoản, và mã nhân viên, được biến thành mã tham chiếu HMAC-SHA256 với salt bí mật của BouyUp, và nằm bên trong phần tóm tắt đã mã hóa.',
+   'Không có dữ liệu cá nhân trên chuỗi; chỉ BouyUp đối chiếu được mã tham chiếu với người thật.'],
+  ['Chuỗi hash cho nhật ký kiểm toán', 'xóa hoặc đảo thứ tự bản ghi của agent',
+   'Mỗi hồ sơ có một chuỗi riêng: đầu chuỗi mới là keccak256 của đầu chuỗi trước, loại bản ghi, dấu vân tay và thời điểm của nó.',
+   'GET /v1/audit/anchors/{case}/verify chỉ ra chính xác chỗ bản ghi bị mất hoặc bị sửa.'],
+  ['Gửi lại an toàn', 'chi trả hai lần',
+   'requestId làm cho lệnh rút tiền có tính idempotent: gửi lại sẽ nhận về cùng bản ghi; dùng lại mã đó cho dữ liệu khác sẽ bị từ chối.',
+   'Agent 4 có thể gửi lại khi hết thời gian chờ mà không có rủi ro.'],
+  ['Khóa do ngân hàng sở hữu', 'BouyUp giữ bí mật của ngân hàng khi chạy thật',
+   'Ngân hàng giữ khóa riêng và chỉ đăng ký khóa công khai. Khi đổi khóa, bản ghi mới dùng khóa mới, bản ghi cũ giữ khóa cũ. Trên chuỗi không có gì cho thấy khóa đã đổi.',
+   'Khi chạy thật BouyUp không bao giờ cần khóa riêng của ngân hàng; chỉ cần khóa chủ của chính mình, và khóa này phải nằm trong HSM hoặc KMS.'],
+ ],
+};
+function renderTech(){ const h = t().techHead;
+  $('#tech').innerHTML = TECH[LANG].map(([title, threat, how, gain]) => `<details class="tech"><summary>${esc(title)}<span>${t().stops} ${esc(threat)}</span></summary>
+  <div class="tech-grid"><div><h4>${h[0]}</h4><p>${esc(threat[0].toUpperCase()+threat.slice(1))}.</p></div><div><h4>${h[1]}</h4><p>${esc(how)}</p></div><div><h4>${h[2]}</h4><p>${esc(gain)}</p></div></div></details>`).join(''); }
+
+/* endpoints: [method, path, en, vi, needs token] */
+const EP = [
+  ['GET','../overview/','This page','Trang này',0],
+  ['POST','/v1/withdrawals','Pay and record an encrypted withdrawal (Agent 4)','Chi trả và ghi lệnh rút tiền đã mã hóa (Agent 4)',1],
+  ['GET','../v1/withdrawals','Withdrawals, decrypted with the master key','Danh sách lệnh rút tiền, giải mã bằng khóa chủ',1],
+  ['GET','/v1/withdrawals/{id}/verify','Full check: fingerprints, 100% split, nodes','Kiểm tra đầy đủ: dấu vân tay, tỷ lệ 100%, các node',1],
+  ['GET','../v1/banks','Bank catalog; /policy and /contract per bank','Danh mục ngân hàng; /policy và /contract cho từng ngân hàng',1],
+  ['GET','../v1/regions','Regions and provinces','Khu vực và tỉnh/thành',1],
+  ['PUT','/v1/banks/{code}/public-key','A bank registers a new encryption key','Ngân hàng đăng ký khóa mã hóa mới',1],
+  ['POST','/v1/audit/anchors','Store a document fingerprint (Agents 1, 2, 3, 5)','Lưu dấu vân tay tài liệu (Agent 1, 2, 3, 5)',1],
+  ['GET','../v1/overview?format=markdown','This overview as Markdown, for docs','Nội dung tổng quan dạng Markdown (tiếng Anh), dùng cho tài liệu',1],
+  ['GET','../explorer/','Public chain explorer','Trình khám phá chuỗi công khai',0],
+  ['POST','/explorer/api/decrypt','Decrypt with your own key','Giải mã bằng khóa của bạn',0],
+  ['GET','../explorer/decrypt_withdrawal.py','Standalone decrypt script','Script giải mã độc lập',0],
+  ['GET','../docs/','Full API reference with examples','Tài liệu API đầy đủ kèm ví dụ',0],
+];
+function renderEP(){
+  $('#endpoints-body').innerHTML = EP.map(([m,p,en,vi,tok]) => { const link = p.startsWith('..') && m === 'GET';
+    const shown = p.replace(/^\.\./,''); return `<tr><td><code>${m} ${link ? `<a href="${esc(p)}">${esc(shown)}</a>` : esc(shown)}</code></td><td>${esc(LANG === 'vi' ? vi : en)}</td><td>${tok ? t().yes : t().no}</td></tr>`; }).join(''); }
+
+/* chain status + hero */
+function renderStatus(){
+  if (CHAIN_ERR) { $('#status').innerHTML = `<span class="chip"><span class="dot off"></span>${esc(t().unreachable(CHAIN_ERR))}</span>`; return; }
+  if (!CHAIN) { $('#status').innerHTML = `<span class="chip"><span class="dot"></span>${t().connecting}</span>`; return; }
+  const o = CHAIN, up = o.nodes.filter(n => n.online).length;
+  $('#status').innerHTML = `<span class="chip"><span class="dot ${up===o.nodes.length?'on':'off'}"></span>${t().nodes(up, o.nodes.length)}</span>
+    <span class="chip">${t().block(o.chain.blockNumber)}</span><span class="chip">${t().recorded(o.totalWithdrawals)}</span>
+    <span class="chip">${esc(o.chain.backend === 'fisco-bcos' ? t().fisco(o.chain.groupId) : t().mockLedger)}</span>`;
+}
+async function loadChain(){
+  try {
+    CHAIN = await get('../explorer/api/overview'); renderStatus();
+    WDS = (await get('../explorer/api/withdrawals?limit=50')).items;
+    CHOICE.wd = WDS[0]?.withdrawalId || ''; fillWithdrawals(); renderCmd();
+    if (WDS.length) await drawHero(WDS[0].withdrawalId, null); else renderHero();
+  } catch (e) { CHAIN_ERR = e.message; renderStatus(); }
+}
+async function drawHero(id, opened){
+  const d = await get('../explorer/api/withdrawals/' + encodeURIComponent(id));
+  HERO = {w: d.withdrawal, opened}; renderHero();
+}
+function renderHero(){
+  const w = HERO.w;
+  if (!w) { $('#hero-pieces').innerHTML = CHAIN && !WDS.length ? `<div class="empty" style="grid-column:1/-1">${esc(t().noWd)}</div>` : `<div class="piece"><div class="t">${t().loading}</div></div>`; $('#hero-slots').innerHTML = ''; return; }
+  $('#hero-id').textContent = w.withdrawalId;
+  const openIdx = new Map((HERO.opened || []).map(p => [p.index, p]));
+  $('#hero-pieces').innerHTML = w.commitments.map((c, i) => { const p = openIdx.get(i);
+    if (p) { const x = p.content; const what = p.kind === 'summary' ? t().sumLine(money(x.amount, x.currency), x.banks) : `${esc(x.bank)}: ${x.percent}%, ${money(x.amount, x.currency)}`;
+      return `<div class="piece open"><div class="t"><span class="lock">🔓</span>${p.kind === 'summary' ? t().summary : esc(t().shareOf(x.bank))}</div><div>${what}</div><div class="m">${p.commitmentMatches ? t().fpOk : t().fpBad}</div></div>`; }
+    return `<div class="piece closed"><div class="t"><span class="lock">🔒</span>${i === 0 ? t().summary : t().bankShareN(i)}</div><div class="c">${esc(short(c))}</div></div>`; }).join('');
+  $('#hero-slots').innerHTML = `<span class="small muted">${t().slots}</span>` + Array.from({length: w.slots}, (_, i) => `<span class="slot${HERO.opened && i === 0 ? ' hit' : ''}" title="${t().slotTitle}"></span>`).join('') + `<span class="small muted">${t().envMeta(w.envelopeBytes, w.blockNumber)}</span>`;
+}
+function fillWithdrawals(){
+  $('#wd').innerHTML = WDS.length ? WDS.map(w => `<option value="${esc(w.withdrawalId)}">${esc(t().wdOpt(w.withdrawalId, w.blockNumber, w.pieces - 1))}</option>`).join('') : `<option value="">${t().noWdOpt}</option>`;
+  if (CHOICE.wd) $('#wd').value = CHOICE.wd;
+}
+
+/* secrets */
+async function loadSecrets(){
+  try { OVERVIEW = await get('../v1/overview', true); SECRETS_STATE = 'ok'; $('#token-box').hidden = true; }
+  catch (e) { SECRETS_STATE = e.status === 401 ? 'token' : 'error:' + e.message; if (e.status === 401) $('#token-box').hidden = false; }
+  if (OVERVIEW) {
+    $('#demo-banner').hidden = !OVERVIEW.demoKeysShown; $('#hidden-banner').hidden = OVERVIEW.demoKeysShown;
+    KEYS = OVERVIEW.secrets.filter(s => s.privateKey && /^[0-9a-f]{64}$/i.test(s.privateKey) && /encryption key|master key/.test(s.name));
+    CHOICE.key = KEYS[0]?.privateKey || '';
+  }
+  renderSecrets(); renderCmd(); liveSetup();
+}
+const SHOWN = new Set();
+function renderSecrets(){
+  const body = $('#secrets-table tbody');
+  if (SECRETS_STATE === 'loading') { body.innerHTML = `<tr><td colspan="3" class="muted">${t().loading}</td></tr>`; }
+  else if (SECRETS_STATE === 'token') { body.innerHTML = `<tr><td colspan="3" class="muted">${t().tokenNeeded}</td></tr>`; }
+  else if (SECRETS_STATE.startsWith('error:')) { body.innerHTML = `<tr><td colspan="3">${esc(SECRETS_STATE.slice(6))}</td></tr>`; }
+  else {
+    const kindOf = s => /master key/.test(s.name) ? 0 : /encryption key/.test(s.name) ? 1 : 2;
+    let lastKind = -1, rows = '';
+    OVERVIEW.secrets.map((s, i) => [s, i]).sort((a, b) => kindOf(a[0]) - kindOf(b[0])).forEach(([s, i]) => { const v = s.privateKey || s.value || '';
+      const usable = v && !v.startsWith('('), k = kindOf(s), tx = secretText(s), shown = SHOWN.has(i);
+      if (k !== lastKind) { rows += `<tr class="group"><td colspan="3">${t().groups[k]}</td></tr>`; lastKind = k; }
+      const unlocks = k === 1 ? esc(t().bankUnlocks(s.owner)) : esc(tx.unlocks);
+      rows += `<tr><td><b>${esc(k === 1 ? s.name.replace(' encryption key', '') : tx.name)}</b><div class="small muted">${esc(s.owner)}${s.status === 'retired' ? t().earlier : ''}</div></td><td class="small">${unlocks}${k !== 1 ? `<div class="muted" style="margin-top:4px">${esc(tx.held)}</div>` : ''}</td>
+        <td>${usable ? `<div class="keyrow"><span class="keycell${shown ? '' : ' masked'}" data-i="${i}">${shown ? esc(v) : '••••••••••••••••'}</span><span style="display:flex;gap:6px"><button class="mini" data-show="${i}" type="button">${shown ? t().hide : t().show}</button><button class="mini" data-copy="${i}" type="button">${t().copy}</button></span></div>` : `<span class="small muted">${esc(v || t().hidden)}</span>`}
+        ${s.publicKey ? `<div class="small muted" style="margin-top:6px">${t().publicKey} <span class="mono">${esc(short(s.publicKey))}</span></div>` : ''}</td></tr>`; });
+    body.innerHTML = rows;
+  }
+  const sel = KEYS.findIndex(k => k.privateKey === CHOICE.key);
+  $('#keypick').innerHTML = KEYS.length ? KEYS.map((k, i) => `<option value="${i}">${esc(keyName(k))}${k.status === 'retired' ? t().earlierP : ''}</option>`).join('') : `<option value="">${t().noKeysOpt}</option>`;
+  if (sel >= 0) $('#keypick').value = String(sel);
+}
+document.addEventListener('click', e => {
+  const s = e.target.closest('[data-show]'), c = e.target.closest('[data-copy]');
+  if (s) { const i = +s.dataset.show; SHOWN.has(i) ? SHOWN.delete(i) : SHOWN.add(i); renderSecrets(); }
+  if (c) { const sec = OVERVIEW.secrets[+c.dataset.copy]; copy(sec.privateKey || sec.value, secretText(sec).name); }
+});
+$('#revealall').onclick = () => { if (!OVERVIEW) return; OVERVIEW.secrets.forEach((s, i) => { const v = s.privateKey || s.value; if (v && !v.startsWith('(')) SHOWN.add(i); }); renderSecrets(); };
+$('#copyjson').onclick = () => OVERVIEW && copy(JSON.stringify(OVERVIEW.secrets, null, 2), t().wAll);
+$('#tokenbtn').onclick = () => { TOKEN = $('#token').value.trim(); try { sessionStorage.setItem('bouyup-token', TOKEN); } catch(e) {} loadSecrets(); };
+
+/* bench */
+$('#wd').onchange = e => { CHOICE.wd = e.target.value; LAST_ALL = null; LAST_ONE = null; renderAll(); renderOne(); renderCmd(); drawHero(CHOICE.wd, null); };
+$('#keypick').onchange = e => { CHOICE.key = KEYS[+e.target.value]?.privateKey || ''; renderCmd(); };
+$('#keypaste').oninput = renderCmd;
+const currentKey = () => $('#keypaste').value.trim() || CHOICE.key;
+const pieceName = p => p.kind === 'summary' ? t().summary.toLowerCase() : LANG === 'vi' ? `phần của ${p.content.bank}` : t().shareOf(p.content.bank);
+
+function renderPieces(body){
+  const sum = body.readable.find(p => p.kind === 'summary'), shares = body.readable.filter(p => p.kind === 'bank_share'), L = t().kv;
+  let h = '';
+  if (sum) { const s = sum.content, a = s.actor || {};
+    h += `<dl class="kv" style="margin-top:12px"><dt>${L[0]}</dt><dd><b>${money(s.amount, s.currency)}</b></dd><dt>${L[1]}</dt><dd>${esc(s.region)}, ${esc(s.province)}</dd>
+      <dt>${L[2]}</dt><dd>${a.type === 'agent' ? esc(t().agent(a.agentId, a.version)) : esc(t().staff(a.role))}</dd><dt>${L[3]}</dt><dd>${s.banks}</dd>
+      <dt>${L[4]}</dt><dd class="mono">${esc(short(s.accountRef))}</dd><dt>${L[5]}</dt><dd class="mono">${esc(s.payoutRef)}</dd></dl>`; }
+  if (shares.length) { h += `<div class="share">${shares.map((p, i) => `<i style="width:${p.content.percent}%;background:${COLORS[i % COLORS.length]}"></i>`).join('')}</div>`;
+    h += shares.map(p => `<div class="small"><b>${esc(p.content.bank)}</b> ${esc(p.content.bankName || '')}: ${p.content.percent}%, ${money(p.content.amount, p.content.currency)}, ${t().contract} ${esc(p.content.contractNo)} ${p.commitmentMatches ? `<span class="verdict ok" style="padding:1px 8px">${t().fpMatches}</span>` : `<span class="verdict no" style="padding:1px 8px">${t().fpMismatch}</span>`}</div>`).join(''); }
+  return h;
+}
+function renderOne(){
+  const o = LAST_ONE, el = $('#oneout');
+  if (!o) { el.innerHTML = ''; return; }
+  if (o.msg) { el.innerHTML = o.msg === 'pick' ? `<div class="empty">${t().pickBoth}</div>` : `<div class="muted">${t().decrypting}</div>`; return; }
+  const r = o.r;
+  if (!r.ok) { el.innerHTML = `<span class="verdict no">🔒 ${esc((r.status === 403 && t().refusedMsg) || r.body.error?.message || t().refused)}</span>`; return; }
+  el.innerHTML = `<span class="verdict ok">🔓 ${t().readsN(r.body.readable.length, r.body.piecesTotal)}</span>` + renderPieces(r.body);
+}
+$('#run1').onclick = async () => {
+  const key = currentKey(); if (!CHOICE.wd || !key) { LAST_ONE = {msg:'pick'}; renderOne(); return; }
+  $('#run1').disabled = true; LAST_ONE = {msg:'busy'}; renderOne();
+  const r = await decrypt(CHOICE.wd, key); $('#run1').disabled = false;
+  LAST_ONE = {r}; renderOne(); drawHero(CHOICE.wd, r.ok ? r.body.readable : null);
+};
+
+function renderAll(){
+  const o = LAST_ALL, el = $('#allout');
+  if (!o) { el.innerHTML = ''; return; }
+  if (o.msg) { el.innerHTML = o.msg === 'busy' ? `<div class="muted">${t().trying(KEYS.length)}</div>` : `<div class="empty">${o.msg === 'nowd' ? t().noWdTest : t().noKeysTest}</div>`; return; }
+  const rows = o.rows, master = rows.find(x => /master/.test(x.k.name));
+  const inIt = new Set((master?.r.body.readable || []).filter(p => p.kind === 'bank_share').map(p => p.content.bank));
+  let pass = true;
+  const html = rows.map(({k, r}) => {
+    const code = (k.name.match(/^(\S+) encryption key/) || [])[1], isMaster = /master/.test(k.name);
+    const read = r.ok ? r.body.readable : [];
+    const allMatch = r.ok && read.every(p => p.commitmentMatches);
+    let expect;
+    if (isMaster) expect = r.ok && read.length === master.r.body.piecesTotal;
+    else if (k.status === 'retired') expect = true;
+    else if (inIt.has(code)) expect = r.ok && read.length === 2 && read.some(p => p.kind === 'bank_share' && p.content.bank === code);
+    else expect = !r.ok && r.status === 403;
+    const good = expect && (!r.ok || allMatch); pass = pass && good;
+    return `<tr><td><b>${esc(keyName(k))}</b>${k.status === 'retired' ? ` <span class="small muted">${t().earlierP}</span>` : ''}</td>
+      <td>${r.ok ? `<span class="verdict ok">🔓 ${esc(read.map(pieceName).join(', '))}</span>` : `<span class="verdict no">🔒 ${t().refused}</span>`}</td>
+      <td class="small">${isMaster ? t().sAll : inIt.has(code) ? t().sOwn : t().sNothing}</td>
+      <td>${good ? `<span class="verdict ok">${t().asExpected}</span>` : `<span class="verdict no">${t().unexpected}</span>`}</td></tr>`; }).join('');
+  const H = t().benchHead;
+  el.innerHTML = `<p><span class="verdict ${pass ? 'ok' : 'no'}">${pass ? t().pass : t().fail}</span> <span class="small muted">${esc(t().tried(rows.length, o.wd, [...inIt].join(', ') || t().unknown))}</span></p>
+    <div class="wide"><table><thead><tr><th>${H[0]}</th><th>${H[1]}</th><th>${H[2]}</th><th>${H[3]}</th></tr></thead><tbody>${html}</tbody></table></div>`;
+}
+$('#runall').onclick = async () => {
+  if (!CHOICE.wd) { LAST_ALL = {msg:'nowd'}; renderAll(); return; }
+  if (!KEYS.length) { LAST_ALL = {msg:'nokeys'}; renderAll(); return; }
+  $('#runall').disabled = true; LAST_ALL = {msg:'busy'}; renderAll();
+  const wd = CHOICE.wd, rows = await Promise.all(KEYS.map(async k => ({k, r: await decrypt(wd, k.privateKey)})));
+  $('#runall').disabled = false; LAST_ALL = {rows, wd}; renderAll();
+  const master = rows.find(x => /master/.test(x.k.name)); if (master?.r.ok) drawHero(wd, master.r.body.readable);
+};
+
+/* commands */
+function renderCmd(){
+  const base = location.origin + location.pathname.replace(/\/overview\/?.*$/, '');
+  const id = CHOICE.wd || 'WD-…'; const key = currentKey() || '<private key>';
+  const cmds = {
+    py: `curl -O ${base}/explorer/decrypt_withdrawal.py\npip install cryptography\npython3 decrypt_withdrawal.py ${base} ${id} ${key}`,
+    cli: `sgchain decrypt -server ${base} -id ${id} -key ${key}`,
+    curl: `curl -X POST ${base}/explorer/api/decrypt -H "Content-Type: application/json" -d '{"withdrawalId":"${id}","privateKey":"${key}"}'`,
+  };
+  $('#cmd').textContent = cmds[TAB]; $('#cmdnote').innerHTML = t().notes[TAB];
+}
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', 'false')); b.setAttribute('aria-selected', 'true'); TAB = b.dataset.tab; renderCmd(); });
+$('#copycmd').onclick = () => copy($('#cmd').textContent, t().wCommand);
+
+
+/* ---------- live walkthrough: a withdrawal, step by step, across the nodes ---------- */
+const LT = {
+ en: {
+  mode:['Example run','Your withdrawal'], exampleSrc:'Example: a real run on the 4-node test chain.', mineSrc:id=>`Your demo withdrawal ${id}, replayed with its real timings.`,
+  mockNote:'This server runs the in-memory test ledger: a single node, so nothing is shared or voted on. Run it on the FISCO BCOS chain to see all four nodes.',
+  stepOf:(k,n)=>`Step ${k} of ${n}`, back:'Back', next:'Next', play:'Play', pause:'Pause', again:'Play again',
+  kinds:{m:'Measured', h:'How it works', i:'Illustration'},
+  legend:['transaction','vote 1 (prepare)','vote 2 (commit)','block'],
+  svc:'BouyUp service', waiting:'waiting', leader:'leader', final:'final', down:'stopped', stuck:'waiting for votes',
+  signed:'signed with the operator key', checked:'100.00% ✓', receipt:'Receipt', vote1:(v,n)=>`vote 1 · ${v}/${n}`, vote2:(v,n)=>`vote 2 · ${v}/${n}`,
+  notHeard:'not heard from', ord:i=>(['1st','2nd','3rd','4th','5th','6th','7th'][i-1]||i+'th'), block:n=>`block #${n}`, nodesHold:(a,b)=>`${a} of ${b} nodes hold it`,
+  root:'root', slotsLbl:'key slots', quorumOk:(a,b)=>`${a} of ${b} agree: final`, quorumNo:(a,b)=>`${a} of ${b}: not enough, waits`,
+  steps:[
+   ['m','The request arrives','A staff member sends a manual withdrawal. BouyUp checks the split: at most 2 decimals per bank, exactly 100.00% in total, and every bank valid for the region.'],
+   ['m','Paid, then sealed','The mock treasury pays the account. The record is cut into a summary plus one piece per bank. Each piece is locked with its own key, the keys go into unnamed slots, and every piece gets a fingerprint, plus one combined fingerprint (the Merkle root).'],
+   ['m','Signed and sent to one node','The operator key signs the transaction and it goes to node0, the node this service talks to. The contract rejects anything not signed by the operator key.'],
+   ['h','Shared with every node','node0 passes the transaction on to the other nodes. Each one keeps it in its waiting pool. Nothing is final yet.'],
+   ['m','The leader proposes a block','One node leads each round, and the role rotates. The leader packs the waiting transaction into a block and sends the proposal to the others.'],
+   ['h','Vote 1: does the block check out?','Every node runs the transaction itself, including the contract recomputing the combined fingerprint, and tells the others its result. A node moves on once 3 of the 4 agree. With 4 nodes, PBFT keeps working with one faulty node.'],
+   ['h','Vote 2: lock it in','Each node announces it is ready to write. With 3 of 4 of these votes the block is final: from here it cannot be changed or reversed.'],
+   ['m','Each node writes the block','Each node writes the block to its own copy of the ledger and sends this service a notice. The nodes light up in the order the notices arrived.'],
+   ['m','Receipt and proof','node0 returns the receipt: the transaction hash, the block, the leader and how many nodes hold it. Each bank can now open its own share with its key.'],
+   ['i','What if a node is down?','With one node stopped, the other three still reach 3 votes and the block is final. With two nodes stopped only 2 votes are possible: the chain waits rather than accept anything it cannot agree on. Nothing wrong is written, and it carries on when a node comes back.'],
+  ],
+  m:{
+   checked:(ms,split,amt)=>`Checked ${ms} ms after the request arrived. ${amt} split ${split}.`,
+   sealed:(ms,p,s,b)=>`Paid and sealed at ${ms} ms: ${p} pieces, ${s} key slots, ${b} bytes.`,
+   sent:(node,ms)=>`Sent to ${node} at ${ms} ms.`,
+   notTimed:'Not timed: the nodes do not report this step.',
+   leader:(n,b)=>`${n} led block #${b}.`,
+   together:ms=>`Steps 4 to 7 took ${ms} ms together, from sending to the first node writing the block.`,
+   writtenHead:'When each node reported the block (since the request arrived):',
+   oneMachine:'All four nodes run on one machine here, so they finish within milliseconds of each other. Across real data centres the gaps would be larger; the order and the 3-of-4 rule stay the same.',
+   receipt:(ms,tx,b,a,n)=>`Receipt at ${ms} ms. Transaction ${tx}, block #${b}, ${a} of ${n} nodes hold it.`,
+   bench:'Decrypt it on the bench', illus:'Not a measurement: this shows what PBFT does when nodes fail. To see it for real, stop a node in WSL and send another demo withdrawal.',
+  },
+  f:{
+   h:'Send a demo withdrawal',
+   desc:cap=>`It goes onto the chain for real and stays there. It is marked as a demo (staff DEMO, reason "Demo: …"), paid by the mock treasury, and capped at ${cap}. The steps below then replay it with its real timings.`,
+   amount:c=>`Amount (${c})`, region:'Region', province:'Province', banks:'Banks and their share (%)', add:'Add a bank', remove:'Remove',
+   total:v=>`Total ${v}%`, note:'Note (optional)', notePh:'e.g. walkthrough for the risk team', send:'Send demo withdrawal', sending:'Sending…',
+   sent:id=>`Recorded as ${id}. Replaying it below.`, refused:m=>`The server refused it: ${m}`,
+   off:'The demo form is off: this server has showDemoKeys turned off. The example run below still works.',
+   token:'Enter the API token in the Secrets section to use the demo form. The example run below works without it.',
+   loading:'Loading regions and banks…',
+  },
+ },
+ vi: {
+  mode:['Ví dụ','Lệnh của bạn'], exampleSrc:'Ví dụ: một lần chạy thật trên chuỗi thử nghiệm 4 node.', mineSrc:id=>`Lệnh demo ${id} của bạn, phát lại với thời gian thật.`,
+  mockNote:'Server này đang chạy sổ cái thử nghiệm trong bộ nhớ: chỉ có một node, nên không có bước chia sẻ hay bỏ phiếu. Hãy chạy trên chuỗi FISCO BCOS để thấy đủ bốn node.',
+  stepOf:(k,n)=>`Bước ${k}/${n}`, back:'Lùi', next:'Tiếp', play:'Phát', pause:'Tạm dừng', again:'Phát lại',
+  kinds:{m:'Đo thực tế', h:'Cách hoạt động', i:'Minh họa'},
+  legend:['giao dịch','phiếu 1 (prepare)','phiếu 2 (commit)','block'],
+  svc:'Dịch vụ BouyUp', waiting:'đang chờ', leader:'dẫn đầu', final:'đã chốt', down:'đã dừng', stuck:'chờ đủ phiếu',
+  signed:'đã ký bằng khóa operator', checked:'100.00% ✓', receipt:'Biên nhận', vote1:(v,n)=>`phiếu 1 · ${v}/${n}`, vote2:(v,n)=>`phiếu 2 · ${v}/${n}`,
+  notHeard:'chưa báo', ord:i=>`thứ ${i}`, block:n=>`block #${n}`, nodesHold:(a,b)=>`${a}/${b} node đang giữ`,
+  root:'gốc', slotsLbl:'ô khóa', quorumOk:(a,b)=>`${a}/${b} đồng ý: đã chốt`, quorumNo:(a,b)=>`${a}/${b}: không đủ, phải chờ`,
+  steps:[
+   ['m','Yêu cầu được gửi đến','Nhân viên gửi một lệnh rút tiền thủ công. BouyUp kiểm tra tỷ lệ chia: mỗi ngân hàng tối đa 2 chữ số thập phân, tổng đúng 100.00%, và mọi ngân hàng đều hợp lệ trong khu vực.'],
+   ['m','Chi trả, rồi niêm phong','Kho quỹ giả lập chi trả vào tài khoản. Bản ghi được chia thành phần tóm tắt và mỗi ngân hàng một phần. Mỗi phần được khóa bằng khóa riêng, các khóa nằm trong các ô không tên, và mỗi phần có dấu vân tay, cộng với một dấu vân tay tổng hợp (gốc Merkle).'],
+   ['m','Ký và gửi tới một node','Khóa operator ký giao dịch, rồi giao dịch được gửi tới node0, node mà dịch vụ này kết nối. Hợp đồng từ chối mọi giao dịch không được ký bằng khóa operator.'],
+   ['h','Chia sẻ cho mọi node','node0 chuyển giao dịch cho các node còn lại. Mỗi node giữ nó trong hàng chờ. Chưa có gì được chốt.'],
+   ['m','Leader đề xuất block','Mỗi vòng có một node dẫn đầu (leader), và vai trò này luân phiên. Leader đóng gói giao dịch đang chờ vào một block và gửi đề xuất cho các node khác.'],
+   ['h','Phiếu 1: block có hợp lệ không?','Mỗi node tự chạy giao dịch, kể cả việc hợp đồng tính lại dấu vân tay tổng hợp, rồi báo kết quả cho các node khác. Node đi tiếp khi 3 trên 4 node đồng ý. Với 4 node, PBFT vẫn chạy đúng khi có một node lỗi.'],
+   ['h','Phiếu 2: chốt lại','Mỗi node thông báo sẵn sàng ghi. Khi đủ 3 trên 4 phiếu này, block được chốt: từ đây không thể sửa hay đảo ngược.'],
+   ['m','Mỗi node ghi block','Mỗi node ghi block vào bản sổ cái của mình và gửi thông báo cho dịch vụ này. Các node sáng lên theo thứ tự thông báo đến.'],
+   ['m','Biên nhận và bằng chứng','node0 trả về biên nhận: mã giao dịch, block, node dẫn đầu và số node đang giữ bản ghi. Giờ mỗi ngân hàng có thể mở phần của mình bằng khóa của mình.'],
+   ['i','Nếu một node bị tắt thì sao?','Khi một node dừng, ba node còn lại vẫn đủ 3 phiếu và block vẫn được chốt. Khi hai node dừng, chỉ còn 2 phiếu: chuỗi sẽ chờ thay vì chấp nhận điều chưa thống nhất. Không có gì sai được ghi, và chuỗi chạy tiếp khi một node quay lại.'],
+  ],
+  m:{
+   checked:(ms,split,amt)=>`Kiểm tra xong sau ${ms} ms kể từ khi nhận yêu cầu. ${amt} chia theo ${split}.`,
+   sealed:(ms,p,s,b)=>`Chi trả và niêm phong xong lúc ${ms} ms: ${p} phần, ${s} ô khóa, ${b} byte.`,
+   sent:(node,ms)=>`Gửi tới ${node} lúc ${ms} ms.`,
+   notTimed:'Không đo: các node không báo cáo bước này.',
+   leader:(n,b)=>`${n} dẫn đầu block #${b}.`,
+   together:ms=>`Bước 4 đến 7 mất tổng cộng ${ms} ms, từ lúc gửi đến khi node đầu tiên ghi block.`,
+   writtenHead:'Thời điểm mỗi node báo đã ghi block (tính từ lúc nhận yêu cầu):',
+   oneMachine:'Ở đây cả bốn node chạy trên cùng một máy, nên chúng xong cách nhau chỉ vài mili giây. Giữa các trung tâm dữ liệu thật, chênh lệch sẽ lớn hơn; thứ tự và quy tắc 3 trên 4 vẫn giữ nguyên.',
+   receipt:(ms,tx,b,a,n)=>`Biên nhận lúc ${ms} ms. Giao dịch ${tx}, block #${b}, ${a}/${n} node đang giữ.`,
+   bench:'Giải mã ở bàn thử', illus:'Không phải số đo: phần này minh họa cách PBFT xử lý khi node lỗi. Muốn thấy thật, hãy dừng một node trong WSL rồi gửi thêm một lệnh demo.',
+  },
+  f:{
+   h:'Gửi lệnh rút tiền demo',
+   desc:cap=>`Lệnh này được ghi thật lên chuỗi và tồn tại vĩnh viễn. Nó được đánh dấu là demo (nhân viên DEMO, lý do "Demo: …"), do kho quỹ giả lập chi trả, và giới hạn tối đa ${cap}. Sau đó các bước bên dưới phát lại lệnh này với thời gian thật.`,
+   amount:c=>`Số tiền (${c})`, region:'Khu vực', province:'Tỉnh/thành', banks:'Ngân hàng và tỷ lệ (%)', add:'Thêm ngân hàng', remove:'Xóa',
+   total:v=>`Tổng ${v}%`, note:'Ghi chú (không bắt buộc)', notePh:'vd: demo cho nhóm rủi ro', send:'Gửi lệnh demo', sending:'Đang gửi…',
+   sent:id=>`Đã ghi với mã ${id}. Đang phát lại bên dưới.`, refused:m=>`Server từ chối: ${m}`,
+   off:'Form demo đang tắt: server này tắt showDemoKeys. Phần ví dụ bên dưới vẫn dùng được.',
+   token:'Nhập token API ở mục Khóa bí mật để dùng form demo. Phần ví dụ bên dưới dùng được mà không cần token.',
+   loading:'Đang tải khu vực và ngân hàng…',
+  },
+ },
+};
+const lt = () => LT[LANG];
+Object.assign(VI_STATIC, {
+  'toc.live':'Xem trực tiếp',
+  'live.h2':'Xem một lệnh rút tiền đi qua chuỗi',
+  'live.p':'Mười bước từ yêu cầu đến biên nhận. Xem từng bước, bấm phát, hoặc gửi một lệnh rút tiền demo rồi xem lại với thời gian thật.',
+});
+
+const NSTEPS = 10, RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const STEP_MS = RM ? 1 : 2600, HOLD_MS = 3200;
+const EXAMPLE = {live:false, nodes:['node0','node1','node2','node3'], submittedTo:'node0', leader:'node2', block:89, pieces:4, slots:4, bytes:3532,
+  amount:5000000, currency:'VND', banks:[['VCB',60],['BIDV',25.5],['TCB',14.5]], root:'0x5a3959cc…c7424a86',
+  steps:{checked:0.1, paid:0.1, sealed:0.4, sent:0.4, receipt:211.9},
+  commits:[{node:'node1',atMs:207.6,seen:true},{node:'node2',atMs:207.6,seen:true},{node:'node0',atMs:208.7,seen:true},{node:'node3',atMs:211.5,seen:true}],
+  txHash:'0x7c1e5a90…5d2ea94f', confirmed:4, total:4};
+const LV = {k:1, t:1, playing:false, start:0, raf:0, mode:'example', mine:null, started:false};
+const lvData = () => (LV.mode === 'mine' && LV.mine) || EXAMPLE;
+
+function fromResponse(o){
+  const tr = o.trace || {}, st = {}; (tr.steps || []).forEach(s => st[s.step] = s.atMs);
+  const nodes = (tr.nodes || []).map(n => n.node).sort();
+  return {live:true, id:o.withdrawalId, nodes: nodes.length ? nodes : ['node0'], submittedTo: tr.submittedTo || 'node0', leader: tr.leader || 'node0',
+    block: tr.blockNumber, pieces: o.onChain.pieces, slots: o.onChain.slots, bytes: o.onChain.envelopeBytes, amount: o.amount, currency: o.currency,
+    banks: o.legs.map(l => [l.bank, l.percent]), root: short(o.onChain.root), steps: st, commits: (tr.nodes || []).filter(n => n.seen),
+    unseen: (tr.nodes || []).filter(n => !n.seen).map(n => n.node), txHash: o.chain?.txHash || '', confirmed: o.chain?.confirmedNodes ?? 0, total: o.chain?.totalNodes ?? 0};
+}
+
+/* geometry */
+const ease = x => x < .5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3)/2;
+const clamp = x => Math.max(0, Math.min(1, x));
+const seg = (t, a, b) => clamp((t - a)/(b - a));
+const SVC = {x:120, y:225};
+function layout(nodes){
+  const pos = {}, N = nodes.length;
+  if (N === 1) { pos[nodes[0]] = {x:560, y:225}; return pos; }
+  nodes.forEach((n, i) => { const a = Math.PI + i*2*Math.PI/N; pos[n] = {x: 590 + 140*Math.cos(a), y: 225 + 140*Math.sin(a)}; });
+  return pos;
+}
+const f1 = v => (Math.round(v*10)/10).toFixed(1);
+const txt = (x, y, s, cls, anchor = 'middle', op = 1) => op <= 0 ? '' : `<text x="${f1(x)}" y="${f1(y)}" class="${cls}" text-anchor="${anchor}" opacity="${f1(op)}">${esc(s)}</text>`;
+const lerp = (a, b, p) => ({x: a.x + (b.x - a.x)*p, y: a.y + (b.y - a.y)*p});
+function dot(a, b, p, cls, r = 6){ if (p <= 0 || p >= 1) return ''; const q = lerp(a, b, ease(p)); return `<circle cx="${f1(q.x)}" cy="${f1(q.y)}" r="${r}" class="${cls}"/>`; }
+function arc(c, r, f, cls){ if (f <= 0) return ''; const C = 2*Math.PI*r; return `<circle cx="${f1(c.x)}" cy="${f1(c.y)}" r="${r}" class="${cls}" stroke-dasharray="${f1(Math.min(f,1)*C)} ${f1(C)}" transform="rotate(-90 ${f1(c.x)} ${f1(c.y)})"/>`; }
+const env = (q, op = 1, s = 1) => op <= 0 ? '' : `<g transform="translate(${f1(q.x)} ${f1(q.y)}) scale(${s})" opacity="${f1(op)}"><rect x="-17" y="-12" width="34" height="24" rx="3" class="sv-env"/><path d="M-17 -12 L0 3 L17 -12" class="sv-envflap"/></g>`;
+const blk = (q, n, done, op = 1) => op <= 0 ? '' : `<g opacity="${f1(op)}"><rect x="${f1(q.x-25)}" y="${f1(q.y-13)}" width="50" height="26" rx="5" class="sv-block${done ? ' done' : ''}"/><text x="${f1(q.x)}" y="${f1(q.y+4.5)}" class="sv-b" text-anchor="middle">#${n}</text></g>`;
+const lock = (x, y, op) => op <= 0 ? '' : `<g opacity="${f1(op)}" transform="translate(${f1(x)} ${f1(y)})"><path d="M-4 0 v-3 a4 4 0 0 1 8 0 v3" class="sv-lockarc"/><rect x="-6" y="0" width="12" height="9" rx="1.5" class="sv-lock"/></g>`;
+const off = (q, dx, dy) => ({x: q.x + dx, y: q.y + dy});
+
+/* votes: every node sends to every other; returns dots and how many votes each node holds at progress p */
+function votes(nodes, pos, p, cls, live){
+  const L = nodes.filter(n => !live || live.includes(n)); let s = ''; const got = {};
+  L.forEach(n => got[n] = 1);
+  L.forEach((a, i) => L.forEach(b => { if (a === b) return; const st = .04 + i*.09, q = seg(p, st, st + .42);
+    s += dot(pos[a], pos[b], q, cls, 5); if (q >= 1) got[b]++; }));
+  return {s, got};
+}
+
+function scene(k, t, D){
+  const T = lt(), N = D.nodes.length, Q = N <= 1 ? N : N - Math.floor((N - 1)/3), pos = layout(D.nodes);
+  const P = i => k > i ? 1 : k === i ? t : 0;
+  const sub = D.submittedTo, ldr = D.leader, others = D.nodes.filter(n => n !== sub);
+  let s = '';
+  // wires
+  for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) { const a = pos[D.nodes[i]], b = pos[D.nodes[j]]; s += `<line x1="${f1(a.x)}" y1="${f1(a.y)}" x2="${f1(b.x)}" y2="${f1(b.y)}" class="sv-link"/>`; }
+  s += `<line x1="210" y1="225" x2="${f1(pos[sub].x - 36)}" y2="${f1(pos[sub].y)}" class="sv-wire"/>`;
+  // service
+  s += `<rect x="30" y="192" width="180" height="66" rx="10" class="sv-box"/>` + txt(120, 230, T.svc, 'sv-t');
+
+  if (k === 10) return s + downScene(t, D, pos, Q);
+
+  // 1: the request card
+  const p1 = P(1), p2 = P(2), p3 = P(3);
+  if (k <= 2 && p1 > 0) {
+    const op = k === 2 ? 1 - seg(p2, 0, .25) : 1, dx = -60*(1 - ease(seg(p1, 0, .35)));
+    let c = `<g opacity="${f1(op*seg(p1, 0, .2))}" transform="translate(${f1(dx)} 0)"><rect x="30" y="34" width="180" height="134" rx="8" class="sv-card"/>`;
+    c += txt(42, 56, money(D.amount, D.currency), 'sv-s', 'start');
+    const nb = D.banks.length, gap = Math.min(22, 66/nb);
+    D.banks.forEach(([b, pc], i) => { const y = 72 + i*gap, fill = 92*pc/100*ease(seg(p1, .3 + i*.08, .7 + i*.08));
+      c += txt(42, y + 9, b, 'sv-s', 'start') + `<rect x="106" y="${f1(y)}" width="92" height="10" rx="3" class="sv-bar0"/><rect x="106" y="${f1(y)}" width="${f1(fill)}" height="10" rx="3" class="sv-bar"/>`; });
+    c += txt(198, 158, T.checked, 'sv-s ok', 'end', seg(p1, .82, .95)) + '</g>';
+    s += c;
+  }
+  // 2: pieces, locks, slots, root
+  if ((k === 2 || k === 3) && p2 > 0) {
+    const op = k === 3 ? 1 - seg(p3, 0, .2) : 1, n = D.pieces, w = Math.min(30, (170 - (n - 1)*6)/n), x0 = 120 - (n*w + (n - 1)*6)/2;
+    let c = `<g opacity="${f1(op)}">`;
+    for (let i = 0; i < n; i++) { const a = seg(p2, .2 + i*.05, .4 + i*.05); if (a <= 0) continue; const x = x0 + i*(w + 6);
+      c += `<rect x="${f1(x)}" y="${f1(60 + 8*(1 - a))}" width="${f1(w)}" height="36" rx="4" class="sv-piece${i === 0 ? ' sum' : ''}" opacity="${f1(a)}"/>` + lock(x + w/2, 70, seg(p2, .45 + i*.04, .6 + i*.04)); }
+    const sl = D.slots, sw = 18, sx0 = 120 - (sl*sw + (sl - 1)*5)/2;
+    for (let i = 0; i < sl; i++) { const a = seg(p2, .6 + i*.04, .72 + i*.04); if (a > 0) c += `<rect x="${f1(sx0 + i*(sw + 5))}" y="116" width="${sw}" height="11" rx="2" class="sv-slot" opacity="${f1(a)}"/>`; }
+    c += txt(120, 145, T.slotsLbl, 'sv-s', 'middle', seg(p2, .7, .8));
+    c += txt(120, 172, `${T.root} ${D.root}`, 'sv-m', 'middle', seg(p2, .82, .95)) + '</g>';
+    s += c;
+  }
+  // 3: signed envelope travels to the submitting node
+  if (k === 3) {
+    s += txt(120, 282, T.signed, 'sv-s br', 'middle', seg(t, .08, .25));
+    const q = seg(t, .3, .9), a = {x:120, y:120}, b = off(pos[sub], -46, -34);
+    s += env(q > 0 ? lerp(a, b, ease(q)) : a, seg(t, 0, .2));
+  }
+  // pools (steps 3-5)
+  const pooled = n => n === sub ? (k > 3 || (k === 3 && t >= .9)) : (k > 4 || (k === 4 && seg(t, .1 + others.indexOf(n)*.1, .55 + others.indexOf(n)*.1) >= 1));
+  if (k >= 3 && k <= 5) D.nodes.forEach(n => { if (pooled(n)) s += env(off(pos[n], -46, -34), k === 5 ? 1 - seg(t, .3, .8) : 1, .62); });
+  if (k === 4) others.forEach((n, i) => { s += dot(pos[sub], pos[n], seg(t, .1 + i*.1, .55 + i*.1), 'sv-tx', 7); });
+  // 5: leader ring + proposals; block icons
+  const leadOp = k > 5 ? 1 : k === 5 ? seg(t, 0, .25) : 0;
+  if (k === 5) D.nodes.filter(n => n !== ldr).forEach((n, i) => { const q = seg(t, .3 + i*.06, .85 + i*.04);
+    if (q > 0 && q < 1) { const c = lerp(pos[ldr], pos[n], ease(q)); s += blk(c, D.block, false); } });
+  // 6, 7: votes
+  const v1 = k >= 6 ? votes(D.nodes, pos, k === 6 ? t : 1, 'sv-v1') : null;
+  const v2 = k >= 7 ? votes(D.nodes, pos, k === 7 ? t : 1, 'sv-v2') : null;
+  if (k === 6) s += v1.s; if (k === 7) s += v2.s;
+  // 8: written order
+  const seen = D.commits.slice().sort((a, b) => a.atMs - b.atMs), first = seen.length ? seen[0].atMs : 0, span = seen.length ? seen[seen.length - 1].atMs - first : 0;
+  const writeAt = {}; seen.forEach((c, i) => writeAt[c.node] = {at: span > 0 ? .1 + (c.atMs - first)/span*.7 : .1 + i*.12, ord: i + 1, rel: c.atMs - first});
+  const wrote = n => writeAt[n] && (k > 8 || (k === 8 && t >= writeAt[n].at));
+  // nodes
+  D.nodes.forEach(n => {
+    const c = pos[n];
+    const ringOp = k <= 7 ? 1 : k === 8 ? 1 - seg(t, 0, .25) : 0;
+    if (v1 && ringOp > 0) s += `<g opacity="${f1(ringOp)}">` + arc(c, 43, N > 1 ? (Math.min(v1.got[n], Q) / Q) : 1, 'sv-arc1') + '</g>';
+    if (v2 && ringOp > 0) s += `<g opacity="${f1(ringOp)}">` + arc(c, 49, N > 1 ? (Math.min(v2.got[n], Q) / Q) : 1, 'sv-arc2') + '</g>';
+    if (n === ldr && leadOp > 0) s += `<circle cx="${f1(c.x)}" cy="${f1(c.y)}" r="37" class="sv-leader" opacity="${f1(leadOp)}"/>` + txt(c.x, c.y - 58, T.leader, 'sv-s br', 'middle', leadOp);
+    s += `<circle cx="${f1(c.x)}" cy="${f1(c.y)}" r="32" class="sv-node${wrote(n) ? ' wrote' : ''}"/>` + txt(c.x, c.y + 5, n, 'sv-t');
+    const hasBlock = k > 5 || (k === 5 && (n === ldr ? t >= .3 : seg(t, .3 + D.nodes.filter(x => x !== ldr).indexOf(n)*.06, .85) >= 1));
+    if (hasBlock) s += blk(off(c, 44, -36), D.block, wrote(n));
+    // status line
+    let st = '', cls = 'sv-s';
+    if (k === 3 || k === 4) { if (pooled(n)) st = T.waiting; }
+    else if (k === 5) st = n === ldr ? '' : (hasBlock ? T.block(D.block) : (pooled(n) ? T.waiting : ''));
+    else if (k === 6) st = T.vote1(Math.min(v1.got[n], N), N);
+    else if (k === 7) { if (v2.got[n] >= Q) { st = T.final; cls = 'sv-s ok'; } else st = T.vote2(v2.got[n], N); }
+    else if (k >= 8) { if (wrote(n)) { const w = writeAt[n]; st = `${T.ord(w.ord)} · +${f1(w.rel)} ms`; cls = 'sv-s ok'; } else if (k > 8 || t > .95) { st = writeAt[n] ? T.final : T.notHeard; } else st = T.final; }
+    if (st) s += txt(c.x, c.y + 70, st, cls);
+  });
+  // 9: receipt
+  if (k === 9) {
+    s += dot(pos[sub], {x:210, y:225}, seg(t, 0, .45), 'sv-tx', 7);
+    const op = seg(t, .45, .7);
+    if (op > 0) s += `<g opacity="${f1(op)}"><rect x="30" y="278" width="180" height="104" rx="8" class="sv-card"/>` + txt(44, 302, T.receipt, 'sv-t', 'start') +
+      txt(44, 324, T.block(D.block), 'sv-s', 'start') + txt(44, 344, `tx ${short(D.txHash)}`, 'sv-m', 'start') + txt(44, 366, T.nodesHold(D.confirmed, D.total), 'sv-s ok', 'start') + '</g>';
+  }
+  return s;
+}
+
+function downScene(t, D, pos, Q){
+  const T = lt(), N = D.nodes.length; let s = '';
+  if (N < 4) { D.nodes.forEach(n => { const c = pos[n]; s += `<circle cx="${c.x}" cy="${c.y}" r="32" class="sv-node"/>` + txt(c.x, c.y + 5, n, 'sv-t'); }); return s; }
+  const d1 = D.nodes[N - 1], d2 = D.nodes[N - 2], phaseB = t >= .55;
+  const live = D.nodes.filter(n => n !== d1 && !(phaseB && n === d2));
+  const p = phaseB ? seg(t, .6, .95) : seg(t, .05, .5);
+  const v = votes(D.nodes, pos, p, 'sv-v2', live); s += v.s;
+  D.nodes.forEach(n => {
+    const c = pos[n], down = !live.includes(n), wasDown2 = n === d2 && phaseB;
+    if (!down) s += arc(c, 46, Math.min(v.got[n], Q)/Q, 'sv-arc2');
+    s += `<circle cx="${f1(c.x)}" cy="${f1(c.y)}" r="32" class="sv-node${down ? ' down' : ''}"/>` + txt(c.x, c.y + 5, n, 'sv-t', 'middle', down ? .55 : 1);
+    if (down) { const a = wasDown2 ? seg(t, .55, .62) : 1; s += `<g opacity="${f1(a)}"><line x1="${f1(c.x-12)}" y1="${f1(c.y-44)}" x2="${f1(c.x+12)}" y2="${f1(c.y-20)}" class="sv-x"/><line x1="${f1(c.x+12)}" y1="${f1(c.y-44)}" x2="${f1(c.x-12)}" y2="${f1(c.y-20)}" class="sv-x"/></g>` + txt(c.x, c.y + 70, T.down, 'sv-s bad', 'middle', a); }
+    else { const ok = v.got[n] >= Q; s += txt(c.x, c.y + 70, ok ? T.final : (p >= 1 ? T.stuck : T.vote2(v.got[n], N)), ok ? 'sv-s ok' : (p >= 1 ? 'sv-s bad' : 'sv-s')); }
+  });
+  const msg = phaseB ? (seg(t, .6, .95) >= 1 ? T.quorumNo(live.length, N) : '') : (p >= 1 ? T.quorumOk(live.length, N) : '');
+  if (msg) s += `<rect x="490" y="210" width="200" height="30" rx="15" class="sv-pill"/>` + txt(590, 230, msg, phaseB ? 'sv-s bad' : 'sv-s ok');
+  return s;
+}
+
+/* caption */
+function caption(k, D){
+  const T = lt(), M = T.m, [kind, title, body] = T.steps[k - 1], st = D.steps, N = D.nodes.length;
+  let meas = '', none = false;
+  const split = D.banks.map(([b, p]) => `${b} ${p}%`).join(', ');
+  switch (k) {
+    case 1: meas = M.checked(f1(st.checked ?? 0), split, money(D.amount, D.currency)); break;
+    case 2: meas = M.sealed(f1(st.sealed ?? 0), D.pieces, D.slots, D.bytes); break;
+    case 3: meas = M.sent(D.submittedTo, f1(st.sent ?? 0)); break;
+    case 4: case 6: meas = M.notTimed; none = true; break;
+    case 5: meas = M.leader(D.leader, D.block); break;
+    case 7: { const first = D.commits.length ? Math.min(...D.commits.map(c => c.atMs)) : null; meas = first != null ? M.together(f1(first - (st.sent ?? 0))) : M.notTimed; none = first == null; break; }
+    case 8: { const seen = D.commits.slice().sort((a, b) => a.atMs - b.atMs);
+      meas = esc(M.writtenHead) + '<table>' + seen.map((c, i) => `<tr><td>${esc(T.ord(i + 1))}</td><td><b>${esc(c.node)}</b>${c.node === D.leader ? ` <span class="small muted">(${esc(T.leader)})</span>` : ''}</td><td class="mono">${f1(c.atMs)} ms</td><td class="mono muted">+${f1(c.atMs - seen[0].atMs)}</td></tr>`).join('') +
+        (D.unseen || []).map(n => `<tr><td>–</td><td><b>${esc(n)}</b></td><td colspan="2" class="muted">${esc(T.notHeard)}</td></tr>`).join('') + '</table>';
+      return capHTML(k, kind, title, body, meas, false, N > 1 ? M.oneMachine : '', true); }
+    case 9: meas = M.receipt(f1(st.receipt ?? 0), short(D.txHash), D.block, D.confirmed, D.total); break;
+    case 10: meas = M.illus; none = true; break;
+  }
+  let note = '';
+  if (N === 1 && [4, 6, 7, 10].includes(k)) note = T.mockNote;
+  let extra = '';
+  if (k === 9 && D.live && D.id) extra = `<div><a class="btn ghost" href="#bench" id="lv-bench">${esc(M.bench)}</a></div>`;
+  return capHTML(k, kind, title, body, esc(meas), none, note, true) + extra;
+}
+function capHTML(k, kind, title, body, measHTML, none, note){
+  const T = lt();
+  return `<div><span class="small muted">${esc(T.stepOf(k, NSTEPS))}</span><span class="kind ${kind}">${esc(T.kinds[kind])}</span></div>
+    <h3>${esc(title)}</h3><p>${esc(body)}</p>${measHTML ? `<div class="measure${none ? ' none' : ''}">${measHTML}</div>` : ''}${note ? `<p class="small muted">${esc(note)}</p>` : ''}`;
+}
+
+/* drawing + playback */
+let lastCap = '';
+function drawLive(){
+  const D = lvData();
+  $('#stage-svg').innerHTML = scene(LV.k, LV.t, D);
+  $('#tbar').style.width = (LV.t*100).toFixed(1) + '%';
+  const key = LANG + LV.k + LV.mode + (D.id || '');
+  if (key !== lastCap) { $('#caption').innerHTML = caption(LV.k, D); lastCap = key; }
+  const T = lt();
+  $('#lv-play').textContent = LV.playing ? T.pause : (LV.k === NSTEPS && LV.t >= 1 ? T.again : T.play);
+  $('#lv-back').disabled = LV.k === 1; $('#lv-next').disabled = LV.k === NSTEPS;
+  document.querySelectorAll('#lv-dots button').forEach((b, i) => { b.className = i + 1 === LV.k ? 'on' : i + 1 < LV.k ? 'past' : ''; b.setAttribute('aria-current', i + 1 === LV.k ? 'step' : 'false'); });
+}
+function loop(ts){
+  if (!LV.start) LV.start = ts;
+  const el = ts - LV.start;
+  LV.t = Math.min(1, el/STEP_MS);
+  drawLive();
+  if (LV.t < 1) { LV.raf = requestAnimationFrame(loop); return; }
+  if (!LV.playing) return;
+  if (el < STEP_MS + HOLD_MS) { LV.raf = requestAnimationFrame(loop); return; }
+  if (LV.k < NSTEPS) { LV.k++; LV.start = ts; LV.t = 0; LV.raf = requestAnimationFrame(loop); }
+  else { LV.playing = false; drawLive(); }
+}
+function goStep(k, play){
+  cancelAnimationFrame(LV.raf);
+  LV.k = Math.max(1, Math.min(NSTEPS, k)); LV.t = 0; LV.start = 0; LV.started = true;
+  if (play !== undefined) LV.playing = play;
+  LV.raf = requestAnimationFrame(loop);
+}
+$('#lv-back').onclick = () => goStep(LV.k - 1, false);
+$('#lv-next').onclick = () => goStep(LV.k + 1, false);
+$('#lv-play').onclick = () => {
+  if (LV.playing) { LV.playing = false; drawLive(); return; }
+  if (LV.k === NSTEPS && LV.t >= 1) goStep(1, true); else if (LV.t >= 1) goStep(LV.k + 1, true); else { LV.playing = true; cancelAnimationFrame(LV.raf); LV.start = performance.now() - LV.t*STEP_MS; LV.raf = requestAnimationFrame(loop); }
+};
+$('#lv-dots').innerHTML = Array.from({length: NSTEPS}, (_, i) => `<button type="button" data-step="${i + 1}" aria-label="${i + 1}">${i + 1}</button>`).join('');
+$('#lv-dots').onclick = e => { const b = e.target.closest('[data-step]'); if (b) goStep(+b.dataset.step, false); };
+$('#stage').addEventListener('keydown', e => { if (e.key === 'ArrowRight') { goStep(LV.k + 1, false); e.preventDefault(); } if (e.key === 'ArrowLeft') { goStep(LV.k - 1, false); e.preventDefault(); } if (e.key === ' ') { $('#lv-play').click(); e.preventDefault(); } });
+document.querySelectorAll('#live-mode [data-mode]').forEach(b => b.onclick = () => { if (b.disabled) return; LV.mode = b.dataset.mode; renderLive(); goStep(1, true); });
+document.addEventListener('click', e => { if (e.target.id === 'lv-bench' && LV.mine) { CHOICE.wd = LV.mine.id; fillWithdrawals(); renderCmd(); drawHero(CHOICE.wd, null); } });
+new IntersectionObserver((es, io) => es.forEach(e => { if (e.isIntersecting && !LV.started) { goStep(1, true); io.disconnect(); } }), {threshold: .45}).observe($('#stage'));
+
+function renderLive(){
+  const T = lt();
+  const [bE, bM] = document.querySelectorAll('#live-mode [data-mode]');
+  bE.textContent = T.mode[0]; bM.textContent = T.mode[1]; bM.disabled = !LV.mine;
+  bE.setAttribute('aria-pressed', String(LV.mode === 'example')); bM.setAttribute('aria-pressed', String(LV.mode === 'mine'));
+  $('#live-src').textContent = LV.mode === 'mine' && LV.mine ? T.mineSrc(LV.mine.id) : T.exampleSrc;
+  $('#lv-back').textContent = T.back; $('#lv-next').textContent = T.next;
+  $('#legend').innerHTML = `<span><i style="background:var(--brass)"></i>${esc(T.legend[0])}</span><span><i style="background:var(--brass);opacity:.6"></i>${esc(T.legend[1])}</span><span><i style="background:var(--ok)"></i>${esc(T.legend[2])}</span><span><i class="b"></i>${esc(T.legend[3])}</span>`;
+  $('#stage').setAttribute('aria-label', T.steps.map((s, i) => `${i + 1}. ${s[1]}`).join(' '));
+  lastCap = ''; drawLive();
+}
+
+/* demo form */
+const LF = {region:'VN', province:'', amount:'', rows:[], note:'', busy:false, msg:'', ok:false, regions:null, banks:{}};
+const DEFAULT_SPLIT = {VN:[['VCB','60'],['BIDV','25.5'],['TCB','14.5']], CN:[['WEBANK','70'],['CMB','30']]};
+const DEFAULT_AMOUNT = {VN:'5000000', CN:'20000'};
+const DEMO_CAP = {VND:10000000, CNY:5000000};
+async function liveSetup(){
+  if (SECRETS_STATE !== 'ok' || !OVERVIEW?.demoKeysShown || LF.regions) { renderDemoForm(); return; }
+  renderDemoForm();
+  try {
+    const r = await get('../v1/regions', true); LF.regions = r.regions;
+    await Promise.all(LF.regions.map(async g => { LF.banks[g.code] = (await get('../v1/banks?region=' + g.code, true)).banks.filter(b => b.active !== false); }));
+    setRegion('VN');
+  } catch (e) { LF.msg = e.message; }
+  renderDemoForm();
+}
+function setRegion(code){
+  const g = LF.regions.find(x => x.code === code) || LF.regions[0];
+  LF.region = g.code; LF.province = g.provinces[0]?.code || '';
+  LF.rows = (DEFAULT_SPLIT[g.code] || [[LF.banks[g.code]?.[0]?.code || '', '100']]).map(r => r.slice());
+  LF.amount = DEFAULT_AMOUNT[g.code] || '1000';
+}
+const regionOf = () => LF.regions?.find(x => x.code === LF.region);
+function splitTotal(){ return LF.rows.reduce((a, [, p]) => a + Math.round((parseFloat(p) || 0)*100), 0); }
+function renderDemoForm(){
+  const F = lt().f, el = $('#demo-form');
+  if (SECRETS_STATE === 'token') { el.innerHTML = `<p class="small muted" style="margin:0">${esc(F.token)}</p>`; return; }
+  if (OVERVIEW && !OVERVIEW.demoKeysShown) { el.innerHTML = `<p class="small muted" style="margin:0">${esc(F.off)}</p>`; return; }
+  if (!LF.regions) { el.innerHTML = `<p class="small muted" style="margin:0">${esc(LF.msg || F.loading)}</p>`; return; }
+  const g = regionOf(), cap = money(DEMO_CAP[g.currency] || 0, g.currency), banks = LF.banks[g.code] || [];
+  el.innerHTML = `<h3>${esc(F.h)}</h3><p class="small muted" style="margin:0">${esc(F.desc(cap))}</p>
+    <div class="formgrid">
+      <label class="f">${esc(F.amount(g.currency))}<input type="text" id="df-amount" inputmode="decimal" value="${esc(LF.amount)}"></label>
+      <label class="f">${esc(F.region)}<select id="df-region">${LF.regions.map(r => `<option value="${esc(r.code)}"${r.code === g.code ? ' selected' : ''}>${esc(r.name)} (${esc(r.currency)})</option>`).join('')}</select></label>
+      <label class="f">${esc(F.province)}<select id="df-province">${g.provinces.map(p => `<option value="${esc(p.code)}"${p.code === LF.province ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
+    </div>
+    <label class="f" style="margin-top:12px">${esc(F.banks)}</label>
+    <div class="splitrows">${LF.rows.map(([b, p], i) => `<div class="srow"><select data-bank="${i}" aria-label="bank ${i + 1}">${banks.map(x => `<option value="${esc(x.code)}"${x.code === b ? ' selected' : ''}>${esc(x.code)} · ${esc(x.name)}</option>`).join('')}</select>
+      <input type="text" data-pct="${i}" inputmode="decimal" value="${esc(p)}" aria-label="% ${i + 1}"><span class="muted">%</span><button class="mini" type="button" data-delrow="${i}"${LF.rows.length < 2 ? ' disabled' : ''}>${esc(F.remove)}</button></div>`).join('')}</div>
+    <div class="row2"><button class="mini" type="button" id="df-add"${LF.rows.length >= banks.length ? ' disabled' : ''}>+ ${esc(F.add)}</button><span class="total" id="df-total"></span></div>
+    <label class="f">${esc(F.note)}<input type="text" id="df-note" maxlength="120" placeholder="${esc(F.notePh)}" value="${esc(LF.note)}"></label>
+    <div class="row" style="margin-top:12px;align-items:center"><button class="btn brass" id="df-send" type="button"${LF.busy ? ' disabled' : ''}>${esc(LF.busy ? F.sending : F.send)}</button><span class="fmsg ${LF.ok ? 'ok' : 'bad'}" id="df-msg">${esc(LF.msg)}</span></div>`;
+  updateTotal();
+}
+function updateTotal(){ const el = $('#df-total'); if (!el) return; const tot = splitTotal(); el.textContent = lt().f.total((tot/100).toFixed(2)); el.className = 'total ' + (tot === 10000 ? 'ok' : 'bad'); }
+$('#demo-form').addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'df-amount') LF.amount = t.value; else if (t.id === 'df-note') LF.note = t.value;
+  else if (t.dataset.pct !== undefined) { LF.rows[+t.dataset.pct][1] = t.value; updateTotal(); }
+});
+$('#demo-form').addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'df-region') { setRegion(t.value); LF.msg = ''; renderDemoForm(); }
+  else if (t.id === 'df-province') LF.province = t.value;
+  else if (t.dataset.bank !== undefined) LF.rows[+t.dataset.bank][0] = t.value;
+});
+$('#demo-form').addEventListener('click', async e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.id === 'df-add') { const used = new Set(LF.rows.map(r => r[0])), free = (LF.banks[LF.region] || []).find(b => !used.has(b.code)); if (free) { LF.rows.push([free.code, '0']); renderDemoForm(); } }
+  else if (t.dataset.delrow !== undefined) { LF.rows.splice(+t.dataset.delrow, 1); renderDemoForm(); }
+  else if (t.id === 'df-send') sendDemo();
+});
+async function sendDemo(){
+  const g = regionOf(), F = lt().f;
+  const amount = Math.round(parseFloat(String(LF.amount).replace(/[\s,]/g, '')) * Math.pow(10, g.minorUnit || 0));
+  const split = {}; LF.rows.forEach(([b, p]) => { split[b] = Number(p); });
+  LF.busy = true; LF.msg = ''; renderDemoForm();
+  const h = {'Content-Type': 'application/json', Accept: 'application/json'}; if (TOKEN) h.Authorization = 'Bearer ' + TOKEN;
+  let r, j = {};
+  try { r = await fetch('../v1/demo/withdrawals', {method: 'POST', headers: h, body: JSON.stringify({amount, region: LF.region, province: LF.province, bankSplit: split, note: LF.note})}); j = await r.json().catch(() => ({})); }
+  catch (e) { r = {ok: false}; j = {error: {message: e.message}}; }
+  LF.busy = false;
+  if (!r.ok) { LF.ok = false; LF.msg = F.refused(j.error?.message || ('HTTP ' + r.status)); renderDemoForm(); return; }
+  LV.mine = fromResponse(j); LV.mode = 'mine'; LF.ok = true; LF.msg = F.sent(j.withdrawalId); renderDemoForm();
+  renderLive(); goStep(1, true);
+  $('#stage').scrollIntoView({behavior: RM ? 'auto' : 'smooth', block: 'center'});
+  loadChain();
+}
+
+/* start: ?lang= wins, then the saved choice, then the browser language */
+(function(){ let l = new URLSearchParams(location.search).get('lang');
+  if (!l) { try { l = localStorage.getItem('bouyup-lang'); } catch(e) {} }
+  if (!l) l = (navigator.language || '').toLowerCase().startsWith('vi') ? 'vi' : 'en';
+  setLang(l, false); })();
+loadChain(); loadSecrets();
+</script>
+</body>
+</html>

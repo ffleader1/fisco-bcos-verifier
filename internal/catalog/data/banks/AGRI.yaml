@@ -1,0 +1,134 @@
+# Mock profile for the BouyUp demo. Not the real policy or terms of Agribank.
+code: AGRI
+name: Agribank
+localName: Ngân hàng Nông nghiệp và Phát triển Nông thôn Việt Nam
+region: VN
+headquarters: VN-HN
+type: State-owned commercial bank (agriculture and rural development)
+active: true
+profile: >-
+  The rural and agricultural bank, with branches in almost every district. Its mission is to fund farmers,
+  cooperatives and agricultural processors, and it is the one bank in the catalog that actively wants
+  agricultural sellers.
+
+limits:
+  minWithdrawal: 1000000
+  maxWithdrawal: 2000000000
+  maxSharePercent: 80
+  dailyCap: 10000000000
+  reimbursementDays: 4
+  feePercent: 0.1
+  maxLoanAmount: 1500000000
+  minAnnualRatePercent: 6.5
+  maxAnnualRatePercent: 12
+  maxTenorDays: 270
+  minStoreAgeMonths: 6
+  minStoreRating: 4.2
+
+policy:
+  version: "2026.10-1"
+  updatedAt: "2026-10-01"
+  summary: >-
+    Agribank backs sellers who bring farm products to e-commerce: coffee, rice, fruit, dried seafood, herbs.
+    It understands harvest seasons and accepts longer, uneven cash flows that other banks avoid, as long as the
+    goods are real and the farmers or cooperatives behind them are identifiable. It is wary of urban resellers
+    of imported consumer goods, which fall outside its mission.
+  riskAppetite: >-
+    Moderate for agriculture (the bank knows the risks and prices them), low for everything else.
+  sectors:
+    prefer:
+      - name: Coffee, tea and pepper
+        why: Core rural value chains; the bank finances growers and can check volumes with local branches.
+      - name: Rice and specialty rice
+        why: Mekong Delta expertise; stable domestic demand.
+      - name: Dried fruit, dried seafood and specialty foods (đặc sản)
+        why: Adds value to farm output and travels well through e-commerce.
+      - name: Fresh fruit sold through cold-chain partners
+        why: Acceptable when the logistics partner and harvest calendar are documented.
+    cautious:
+      - name: Handicrafts and rural products
+        why: Welcome, but demand is small; keep amounts modest.
+      - name: Agricultural inputs (seeds, fertiliser, tools)
+        why: Fine for licensed distributors only.
+    avoid:
+      - name: Imported consumer electronics and fashion resale
+        why: Outside the bank's mission and expertise.
+      - name: Luxury goods
+        why: Not aligned with the rural development mandate.
+      - name: Pesticides or veterinary drugs without licences
+        why: Regulated goods.
+    note: Seasonality is expected. Judge the harvest calendar and storage plan, not month-to-month swings.
+  regions:
+    prefer:
+      - code: VN-DLK
+        name: Đắk Lắk
+        why: Coffee capital; strong local branch knowledge of growers.
+      - code: VN-LD
+        name: Lâm Đồng
+        why: Coffee, vegetables, flowers and dragon fruit; many cooperatives bank with Agribank.
+      - code: VN-AG
+        name: An Giang
+        why: Rice and pangasius; deep Mekong Delta network.
+      - code: VN-CT
+        name: Cần Thơ
+        why: Mekong Delta hub for fruit and rice processing.
+    cautious:
+      - code: VN-HCM
+        name: TP. Hồ Chí Minh
+        why: Fine for sellers that source directly from farms; city resellers need proof of origin.
+      - code: VN-HN
+        name: Hà Nội
+        why: Same as TP. HCM.
+    avoid: []
+    note: Rural sellers with weak online history but strong local reputation can still qualify; ask Agent 1 to check the cooperative.
+  customers:
+    prefer:
+      - name: Cooperatives and farmer groups selling under a shared brand
+        why: Spreads risk across many producers and supports the bank's mandate.
+      - name: Young rural entrepreneurs selling family farm products online
+        why: Exactly the customer the bank wants to grow with.
+    cautious:
+      - name: Middlemen without contracts with growers
+        why: Ask for purchase agreements with named farms or cooperatives.
+    avoid:
+      - name: Sellers with overdue Agribank farm loans
+        why: Bank-wide policy.
+  useOfFunds:
+    - Buying harvest from named growers or cooperatives, processing, packaging and storage.
+    - Cold-chain logistics for fresh goods when contracted in advance.
+  positiveSignals:
+    - OCOP (One Commune One Product) certification.
+    - Geographical indication or organic certification.
+    - Multi-year purchase agreements with the same growers.
+  redFlags:
+    - Claimed origin does not match the province of the supplier.
+    - Volumes larger than the region could plausibly produce for that season.
+    - No storage plan for goods that must be sold over several months.
+  escalateWhen:
+    - Weather events (drought, saline intrusion, storms) reported in the source area this season.
+    - The seller changes the source province after approval.
+  dealBreakers:
+    - Mislabelled origin (for example imported goods sold as local specialties).
+    - Products banned from export or domestic sale.
+  reviewerNotes: >-
+    Agribank is the natural home for agricultural sellers that every other bank avoids. When a split includes an
+    agricultural seller, giving Agribank the largest share usually satisfies all policies.
+
+contract:
+  contractNo: BU-AGRI-2026-01
+  title: Payment facilitation and reimbursement agreement
+  parties: [Agribank, BouyUp]
+  status: active
+  effectiveFrom: "2026-03-01"
+  expiresOn: "2027-12-31"
+  creditLine: 50000000000
+  reimbursementTerms: Agribank reimburses its share within 4 business days of the on-chain record.
+  feeTerms: 0.10% of Agribank's share (reduced rate under the rural development programme).
+  evidenceTerms: The on-chain withdrawal record is the evidence of payment.
+  dataTerms: Salted references only; no personal data on chain.
+  governingLaw: Laws of Vietnam
+  disputeResolution: Vietnam International Arbitration Centre (VIAC), Hà Nội
+  termination: 20 business days' notice.
+  keyClauses:
+    - Agribank reports quarterly to its rural programme on the number of agricultural sellers funded.
+    - Withdrawals for fresh produce must name the logistics partner in the withdrawal memo kept by BouyUp.

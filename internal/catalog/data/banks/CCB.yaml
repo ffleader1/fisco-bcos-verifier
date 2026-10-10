@@ -1,0 +1,124 @@
+# Mock profile for the BouyUp demo. Not the real policy or terms of China Construction Bank.
+code: CCB
+name: China Construction Bank
+localName: 中国建设银行
+region: CN
+headquarters: CN-BJ
+type: Large state-owned commercial bank
+active: true
+profile: >-
+  Large state-owned bank with a well-known e-commerce receivables product (advances against paid but
+  not-yet-settled orders). Thinks in terms of receivables: money the platform already owes the seller.
+
+limits:
+  minWithdrawal: 100000
+  maxWithdrawal: 150000000
+  maxSharePercent: 70
+  dailyCap: 1500000000
+  reimbursementDays: 2
+  feePercent: 0.1
+  maxLoanAmount: 80000000
+  minAnnualRatePercent: 5
+  maxAnnualRatePercent: 12
+  maxTenorDays: 120
+  minStoreAgeMonths: 12
+  minStoreRating: 4.5
+
+policy:
+  version: "2026.10-1"
+  updatedAt: "2026-10-01"
+  summary: >-
+    CCB is most comfortable when the money it advances is backed by platform receivables the seller is already
+    owed. Short, receivable-backed amounts (tier 1) are its sweet spot; forward-looking campaign loans (tier 2)
+    are fine for sellers with long, stable payout histories. Home and building-related goods are a strategic
+    focus.
+  riskAppetite: >-
+    Low to moderate. High comfort with receivable-backed amounts, lower with forecasts.
+  sectors:
+    prefer:
+      - name: Home furnishing, decoration and building materials
+        why: Strategic sector for the bank, with deep supplier knowledge.
+      - name: Sellers with large volumes of settled but unpaid orders
+        why: Receivables give the bank a clear repayment source.
+      - name: Mother and baby essentials from licensed brands
+        why: Steady demand and strong brand loyalty.
+    cautious:
+      - name: Fashion
+        why: Fine for receivable-backed amounts; forecast-based amounts need two peak seasons.
+      - name: Electronics
+        why: Fine with authorised distributor contracts.
+    avoid:
+      - name: Pre-sale models where goods ship long after payment
+        why: Receivables can turn into refunds.
+      - name: Virtual goods, game top-ups and gift cards
+        why: Fraud and money-laundering exposure.
+    note: Where the seller sits on the receivables-versus-forecast spectrum matters more than the category.
+  regions:
+    prefer:
+      - code: CN-SH
+        name: Shanghai
+        why: Brand owners with strong payout histories.
+      - code: CN-JS
+        name: Jiangsu
+        why: Manufacturing and home goods clusters.
+      - code: CN-ZJ
+        name: Zhejiang
+        why: Large Taobao and Tmall seller base.
+      - code: CN-GD
+        name: Guangdong
+        why: Foshan furniture cluster.
+    cautious:
+      - code: CN-CQ
+        name: Chongqing
+        why: Accepted for established brands; small sellers need more history.
+      - code: CN-SC
+        name: Sichuan
+        why: Same as Chongqing.
+    avoid: []
+    note: Eastern coastal provinces are preferred for forecast-based amounts; receivable-backed amounts are fine anywhere.
+  customers:
+    prefer:
+      - name: Sellers whose platform settles to a CCB account
+        why: The receivable flows straight to the bank.
+      - name: Tmall and JD flagship stores
+        why: Platform vetting adds a layer of trust.
+    cautious:
+      - name: Sellers with refund rates rising over the last quarter
+        why: Receivables may not convert into cash.
+    avoid:
+      - name: Sellers with platform penalties for false advertising
+        why: Platform may withhold settlement.
+  useOfFunds:
+    - Working capital against paid, unsettled orders.
+    - Campaign stock when the payout history is stable.
+  positiveSignals:
+    - Refund rate below 5% for 6 months.
+    - Platform settlement cycle of 7 days or less.
+  redFlags:
+    - Growing gap between orders and settled payouts.
+    - Platform account under investigation or with withheld funds.
+  escalateWhen:
+    - Platform has frozen any part of the seller's balance.
+  dealBreakers:
+    - Fabricated orders used to inflate receivables.
+  reviewerNotes: >-
+    Use CCB for the receivable-backed part of a withdrawal. If the withdrawal funds a forward-looking campaign
+    for a young shop, keep CCB's share small.
+
+contract:
+  contractNo: BU-CCB-2026-01
+  title: Payment facilitation and reimbursement agreement
+  parties: [China Construction Bank, BouyUp]
+  status: active
+  effectiveFrom: "2026-01-01"
+  expiresOn: "2027-12-31"
+  creditLine: 6000000000
+  reimbursementTerms: CCB reimburses its share within 2 business days of the on-chain record.
+  feeTerms: 0.10% of CCB's share.
+  evidenceTerms: The on-chain withdrawal record is the evidence of payment.
+  dataTerms: Salted references only; processing follows the PRC Personal Information Protection Law.
+  governingLaw: Laws of the People's Republic of China
+  disputeResolution: China International Economic and Trade Arbitration Commission (CIETAC), Beijing
+  termination: 30 days' notice.
+  keyClauses:
+    - CCB may ask BouyUp for the order-level receivable data behind a withdrawal it funded.

@@ -1,0 +1,163 @@
+# Mock profile for the BouyUp demo. Not the real policy or terms of Vietcombank.
+code: VCB
+name: Vietcombank
+localName: Ngân hàng TMCP Ngoại thương Việt Nam
+region: VN
+headquarters: VN-HN
+type: State-owned commercial bank
+active: true
+profile: >-
+  Large state-owned bank with the strongest foreign-exchange and trade-finance franchise in Vietnam.
+  Conservative, documentation-heavy, cares a lot about reputation. Funds a share of a withdrawal when it is
+  confident the seller is stable and will still be in business next year.
+
+limits:
+  minWithdrawal: 5000000
+  maxWithdrawal: 5000000000
+  maxSharePercent: 70
+  dailyCap: 20000000000
+  reimbursementDays: 3
+  feePercent: 0.15
+  maxLoanAmount: 3000000000
+  minAnnualRatePercent: 7.5
+  maxAnnualRatePercent: 13
+  maxTenorDays: 180
+  minStoreAgeMonths: 24
+  minStoreRating: 4.5
+
+policy:
+  version: "2026.10-1"
+  updatedAt: "2026-10-01"
+  summary: >-
+    Vietcombank wants steady, well-documented sellers more than fast growers. It would rather fund a smaller
+    amount it fully understands than stretch for a large ticket. It values clean paperwork, a real warehouse,
+    invoices that match the declared purchase, and income that already flows through a Vietnamese bank account.
+    Exporters and sellers with foreign-currency income are especially welcome.
+  riskAppetite: >-
+    Low. Comfortable with thin margins on safe deals; uncomfortable with any story it cannot verify. When in
+    doubt it prefers the smaller pre-computed option over a full rejection.
+  sectors:
+    prefer:
+      - name: Electronics and tech accessories
+        why: Stable demand, easy to verify suppliers and invoices, prices do not swing with fashion trends.
+      - name: Light manufacturing with own production
+        why: A seller who makes what it sells has assets and know-how; the bank sees less resale risk.
+      - name: Export-oriented sellers (cross-border e-commerce)
+        why: Brings foreign-currency income through Vietcombank, which the bank actively wants.
+      - name: Household goods and kitchenware
+        why: Repeat purchases, low return rates, predictable seasons.
+    cautious:
+      - name: Fashion and apparel
+        why: Fine for established brands with two or more peak seasons of history; fast-trend resellers are not.
+      - name: Cosmetics and personal care
+        why: Counterfeit and grey-import risk. Needs distributor authorisation letters and import documents.
+      - name: Mother and baby products
+        why: Strong demand but heavy product-safety exposure; wants certificates for every imported item.
+    avoid:
+      - name: Fresh agricultural produce and live seafood
+        why: Spoilage and weather make cash-flow forecasts unreliable; the bank leaves this to agricultural lenders.
+      - name: Health supplements and "functional foods"
+        why: Frequent advertising violations and licensing issues; reputational risk is too high.
+      - name: Anything crypto, betting or gambling-adjacent
+        why: Excluded by bank-wide policy.
+      - name: Products that depend on one viral trend
+        why: Demand can disappear before the loan is repaid.
+    note: When a seller spans several categories, judge by the category that takes most of the borrowed money.
+  regions:
+    prefer:
+      - code: VN-HN
+        name: Hà Nội
+        why: Densest branch network; staff can visit the warehouse quickly if something looks wrong.
+      - code: VN-BN
+        name: Bắc Ninh
+        why: Electronics supply chain the bank knows well through its corporate clients.
+      - code: VN-HP
+        name: Hải Phòng
+        why: Port and logistics hub; many exporters already bank with Vietcombank.
+      - code: VN-QNI
+        name: Quảng Ninh
+        why: Border-trade expertise; comfortable with sellers importing through Móng Cái when customs papers are clean.
+    cautious:
+      - code: VN-HCM
+        name: TP. Hồ Chí Minh
+        why: Accepted case by case. Very competitive market where Vietcombank has less data on small sellers.
+      - code: VN-DN
+        name: Đà Nẵng
+        why: Fine for established sellers; tourism-linked products are seasonal.
+      - code: VN-CT
+        name: Cần Thơ
+        why: Only when the seller already holds a Vietcombank account with at least 12 months of history.
+      - code: VN-AG
+        name: An Giang
+        why: Same as Cần Thơ; most businesses there are agricultural, which the bank avoids.
+    avoid: []
+    note: Location is a preference, not a rule. A strong seller from a cautious province can still be funded with a smaller share.
+  customers:
+    prefer:
+      - name: Sellers with an existing Vietcombank account
+        why: Income already visible to the bank; easier collection.
+      - name: Registered companies or household businesses with tax codes and e-invoices
+        why: Paperwork that can be checked against the tax portal.
+      - name: Sellers active for two or more years across at least two peak seasons
+        why: Enough history to trust the forecast.
+    cautious:
+      - name: Sellers who moved platforms in the last 6 months
+        why: History is fragmented; ask why they moved.
+      - name: Owners who also run several other shops
+        why: Money can leak between shops; ask for all shops to be declared.
+    avoid:
+      - name: Sellers with any bad debt in the credit report in the last 3 years
+        why: Bank-wide policy.
+  useOfFunds:
+    - Purchase of stock from a named supplier with invoices that match the quantities in the campaign plan.
+    - Not for paying off other loans, buying property, or marketing spend alone.
+    - The bank likes to see the supplier paid directly, never the seller's personal account.
+  positiveSignals:
+    - Foreign-currency income from cross-border sales.
+    - Long relationship with the same supplier (two or more years of invoices).
+    - Return rate clearly below the category average.
+    - Owner contributes a visible share of their own money to the campaign.
+  redFlags:
+    - Supplier and seller share an address, phone number or bank account.
+    - Declared purchase price well above the invoice price.
+    - A sudden switch of product category shortly before a big campaign.
+    - Sales spike in the month before applying with no matching marketing explanation.
+    - Many orders with waybills that cannot be found at the carrier.
+  escalateWhen:
+    - The seller cannot explain a large gap between declared and invoiced prices.
+    - The supplier is new and the order is more than half of the seller's usual monthly purchases.
+    - The seller asks to change the receiving account after approval.
+  dealBreakers:
+    - Unlicensed regulated goods (medicines, medical devices, alcohol or tobacco without a licence).
+    - Evidence of fake orders or brushing.
+    - Sanctioned counterparties anywhere in the supply chain.
+  reviewerNotes: >-
+    Agent 3 should treat Vietcombank as the conservative anchor of a split. When Vietcombank's preferences are
+    not met it is usually better to lower its share and give the rest to a bank with a higher risk appetite than
+    to exclude it entirely. Explain each concern in plain words; the bank reads the reasons, not a score.
+
+contract:
+  contractNo: BU-VCB-2026-01
+  title: Payment facilitation and reimbursement agreement
+  parties: [Vietcombank, BouyUp]
+  status: active
+  effectiveFrom: "2026-01-01"
+  expiresOn: "2027-12-31"
+  creditLine: 100000000000
+  reimbursementTerms: >-
+    BouyUp pays the target account first. Vietcombank reimburses its share of each withdrawal within
+    3 business days after the withdrawal is recorded on the BouyUp FISCO BCOS chain.
+  feeTerms: BouyUp charges 0.15% of Vietcombank's share, deducted when the bank reimburses.
+  evidenceTerms: >-
+    The on-chain withdrawal record (transaction hash, record hash and bank share) is accepted by both parties as
+    evidence that BouyUp paid. Either party can check it on any consortium node.
+  dataTerms: >-
+    No personal data is written on chain. Account numbers and user ids appear only as salted references that
+    BouyUp can match on request. Processing follows Vietnam's personal data protection rules.
+  governingLaw: Laws of Vietnam
+  disputeResolution: Vietnam International Arbitration Centre (VIAC), Hà Nội
+  termination: Either party may stop new withdrawals with 5 business days' written notice; shares already paid out remain due.
+  keyClauses:
+    - Vietcombank's outstanding reimbursements to BouyUp may not exceed the credit line.
+    - Vietcombank may refuse to take a share of a future withdrawal but may not refuse one already recorded on chain.
+    - BouyUp keeps the full withdrawal request for 10 years for audit.

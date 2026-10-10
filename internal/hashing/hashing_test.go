@@ -21,10 +21,10 @@ func TestCanonicalIsKeyOrderIndependent(t *testing.T) {
 }
 
 func TestRefAndExtRef(t *testing.T) {
-	if Ref([]byte("s1"), DomainSeller, "x") == Ref([]byte("s2"), DomainSeller, "x") {
+	if Ref([]byte("s1"), DomainAccount, "x") == Ref([]byte("s2"), DomainAccount, "x") {
 		t.Fatal("salt must matter")
 	}
-	if Ref([]byte("s"), DomainSeller, "x") == Ref([]byte("s"), DomainSupplier, "x") {
+	if Ref([]byte("s"), DomainAccount, "x") == Ref([]byte("s"), DomainStaff, "x") {
 		t.Fatal("domain must matter")
 	}
 	h := ExtRef("WB20261004")

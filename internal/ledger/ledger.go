@@ -2,103 +2,79 @@ package ledger
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-// Ledger is the SellerGraph on-chain system of record. Every method maps 1:1 to a LoanLedger / AuditTrail
-// contract function; the implementation picks the signing account that holds the required role
-// (operator, officer, monitor, funder, audit writer).
+// Ledger is the BouyUp on-chain system of record. Write methods map 1:1 to a WithdrawalLedger / AuditTrail
+// contract function and are signed by the operator (service) key. The explorer reads cover blocks,
+// transactions and the state of every configured node.
 type Ledger interface {
 	Info(ctx context.Context) (ChainInfo, error)
 	// Now returns chain time in unix seconds (latest block timestamp / mock clock).
 	Now(ctx context.Context) (int64, error)
 
-	// origination
-	CreateLoan(ctx context.Context, req CreateLoan) (Tx, error)
-	ConfirmFunding(ctx context.Context, loanID, funder string) (Tx, error)
-	OfficerDecision(ctx context.Context, loanID string, approved bool, reviewHash Hash) (Tx, error)
-	CancelLoan(ctx context.Context, loanID string, reasonHash Hash) (Tx, error)
-
-	// disbursement & repayment
-	RecordDisbursement(ctx context.Context, req Disbursement) (Tx, error)
-	RecordRepayment(ctx context.Context, req Repayment) (RepaymentResult, error)
-	CheckpointFloor(ctx context.Context, req FloorCheckpoint) (FloorResult, error)
-	MarkMatured(ctx context.Context, loanID string, asOf int64) (Tx, error)
-	Accelerate(ctx context.Context, loanID string, reasonHash Hash, asOf int64) (Tx, error)
-	MarkDefault(ctx context.Context, loanID string, reasonHash Hash) (Tx, error)
-	Restructure(ctx context.Context, req Restructure) (Tx, error)
-
-	// monitoring
-	RaiseAlert(ctx context.Context, loanID string, level AlertLevel, code string, evidence Hash) (Tx, error)
-	RecordCovenantEvent(ctx context.Context, loanID, code string, breached bool, evidence Hash) (Tx, error)
-	RecordDelivery(ctx context.Context, loanID string, line int, waybillHash Hash, shippedAt int64) (DeliveryResult, error)
-	FlagMissingDelivery(ctx context.Context, loanID string, line int, asOf int64) (Tx, error)
-
-	// reads
-	GetLoan(ctx context.Context, loanID string) (Loan, error)
-	ListLoanIDs(ctx context.Context, offset, limit int) (ids []string, total int, err error)
-	PreviewPayoff(ctx context.Context, loanID string, asOf int64) (Payoff, error)
+	// withdrawals
+	RecordWithdrawal(ctx context.Context, req WithdrawalRequest) (Withdrawal, Tx, error)
+	GetWithdrawal(ctx context.Context, id string) (Withdrawal, error)
+	// ListWithdrawals returns the newest first.
+	ListWithdrawals(ctx context.Context, offset, limit int) (items []Withdrawal, total int, err error)
 
 	// audit trail
 	Anchor(ctx context.Context, req AnchorRequest) (AnchorRecord, error)
 	ListAnchors(ctx context.Context, subject string) ([]AnchorRecord, error)
 	LocateAnchor(ctx context.Context, contentHash Hash) (AnchorRecord, bool, error)
 
+	// explorer
+	Nodes(ctx context.Context) ([]NodeInfo, error)
+	LatestBlocks(ctx context.Context, limit int) ([]Block, error)
+	GetBlock(ctx context.Context, number int64) (Block, error)
+	GetTransaction(ctx context.Context, hash string) (TxDetail, error)
+
 	Close()
 }
 
-// Admin covers deployment-time configuration (role grants, policy). Used by bootstrap code only.
+// CommitWatcher is implemented by ledgers that hear from every node when it writes a block (FISCO BCOS block
+// notifications, one subscription per node). Used by the overview's step-by-step demo.
+type CommitWatcher interface {
+	// BlockCommits reports when each configured node said it had written block n, waiting up to wait for the nodes
+	// still missing. Nodes that did not report in time come back with Seen=false.
+	BlockCommits(ctx context.Context, n int64, wait time.Duration) []NodeCommit
+}
+
+// NodeCommit is one node's "I wrote block N" notice, timed when this service received it.
+type NodeCommit struct {
+	Node string    `json:"node"`
+	At   time.Time `json:"-"`
+	Seen bool      `json:"seen"`
+}
+
+// Admin covers deployment-time configuration (role grants). Used by bootstrap code only.
 type Admin interface {
 	GrantRole(ctx context.Context, account string, role uint64) (Tx, error)
-	SetPolicy(ctx context.Context, p Policy) (Tx, error)
-	GetPolicy(ctx context.Context) (Policy, error)
 	HasRole(ctx context.Context, account string, role uint64) (bool, error)
 }
 
 // Accounts are the 0x addresses of the signing identities.
 type Accounts struct {
-	Admin    string            `json:"admin"`
-	Operator string            `json:"operator"`
-	Officer  string            `json:"officer"`
-	Monitor  string            `json:"monitor"`
-	Funders  map[string]string `json:"funders"` // name -> address
+	Admin    string `json:"admin"`
+	Operator string `json:"operator"`
 }
 
-// Bootstrap grants the standard roles and sets policy. Idempotent.
-func Bootstrap(ctx context.Context, a Admin, acc Accounts, p Policy) error {
-	grants := []struct {
-		addr string
-		role uint64
-	}{
-		{acc.Operator, RoleOperator | RoleAuditWriter},
-		{acc.Officer, RoleOfficer | RoleAuditWriter},
-		{acc.Monitor, RoleMonitor | RoleAuditWriter},
+// Bootstrap grants the operator its roles. Idempotent (grantRole ORs bits).
+func Bootstrap(ctx context.Context, a Admin, acc Accounts) error {
+	if acc.Operator == "" {
+		return fmt.Errorf("operator account is required")
 	}
-	for _, f := range acc.Funders {
-		grants = append(grants, struct {
-			addr string
-			role uint64
-		}{f, RoleFunder})
-	}
-	for _, g := range grants {
-		if g.addr == "" {
-			continue
-		}
-		// grantRole ORs bits, so re-running bootstrap is harmless.
-		if _, err := a.GrantRole(ctx, g.addr, g.role); err != nil {
-			return fmt.Errorf("grant role %d to %s: %w", g.role, g.addr, err)
-		}
-	}
-	if p.MaxRateBps > 0 {
-		if _, err := a.SetPolicy(ctx, p); err != nil {
-			return fmt.Errorf("set policy: %w", err)
-		}
+	if _, err := a.GrantRole(ctx, acc.Operator, RoleOperator|RoleAuditWriter); err != nil {
+		return fmt.Errorf("grant roles to operator %s: %w", acc.Operator, err)
 	}
 	return nil
 }
@@ -108,7 +84,7 @@ func Bootstrap(ctx context.Context, a Admin, acc Accounts, p Policy) error {
 var idRe = regexp.MustCompile(`^[A-Za-z0-9._:\-]{1,32}$`)
 var codeRe = regexp.MustCompile(`^[A-Z0-9_]{1,32}$`)
 
-// IDToBytes32 encodes a human-readable identifier (loan id, subject) left-aligned in a bytes32, so it stays
+// IDToBytes32 encodes a human-readable identifier (withdrawal id, audit subject) left-aligned in a bytes32, so it stays
 // readable in chain explorers and is reversible. Max 32 chars of [A-Za-z0-9._:-].
 func IDToBytes32(id string) (Hash, error) {
 	var h Hash
@@ -122,7 +98,7 @@ func IDToBytes32(id string) (Hash, error) {
 // Bytes32ToID reverses IDToBytes32.
 func Bytes32ToID(h Hash) string { return strings.TrimRight(string(h[:]), "\x00") }
 
-// CodeToBytes32 encodes an UPPER_SNAKE code (alert / covenant code) as bytes32 ASCII.
+// CodeToBytes32 encodes an UPPER_SNAKE code as bytes32 ASCII.
 func CodeToBytes32(code string) (Hash, error) {
 	var h Hash
 	if !codeRe.MatchString(code) {
@@ -158,7 +134,7 @@ func Errorf(kind ErrorKind, format string, args ...any) *Error {
 	return &Error{Kind: kind, Message: fmt.Sprintf(format, args...)}
 }
 
-// FromRevert converts a contract revert reason ("E_BAD_STATUS: loan not active") to an *Error.
+// FromRevert converts a contract revert reason ("E_NOT_FOUND: withdrawal") to an *Error.
 func FromRevert(reason string) *Error {
 	prefixes := map[string]ErrorKind{
 		"E_UNAUTHORIZED": KindUnauthorized,
@@ -191,4 +167,40 @@ func ChainHead(prev Hash, kind AnchorKind, content Hash, ts int64) Hash {
 	var tsb [8]byte
 	binary.BigEndian.PutUint64(tsb[:], uint64(ts))
 	return Hash(crypto.Keccak256Hash(prev[:], []byte{byte(kind)}, content[:], tsb[:]))
+}
+
+// TextToBytes32 encodes printable ASCII text of at most 32 bytes (codes, versions, references) left-aligned.
+func TextToBytes32(field, s string) (Hash, error) {
+	var h Hash
+	if s == "" || len(s) > 32 {
+		return h, Errorf(KindInvalid, "%s must be 1-32 characters", field)
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < 0x20 || s[i] > 0x7e {
+			return h, Errorf(KindInvalid, "%s must be printable ASCII", field)
+		}
+	}
+	copy(h[:], s)
+	return h, nil
+}
+
+// MerkleRoot folds commitments into one root exactly like WithdrawalLedger._merkle: pairs are hashed with
+// SHA-256(left || right); an odd node at the end of a level moves up unchanged. One leaf is its own root.
+func MerkleRoot(leaves []Hash) Hash {
+	if len(leaves) == 0 {
+		return ZeroHash
+	}
+	level := append([]Hash(nil), leaves...)
+	for len(level) > 1 {
+		next := make([]Hash, 0, (len(level)+1)/2)
+		for i := 0; i < len(level); i += 2 {
+			if i+1 == len(level) {
+				next = append(next, level[i])
+				continue
+			}
+			next = append(next, Hash(sha256.Sum256(append(level[i][:], level[i+1][:]...))))
+		}
+		level = next
+	}
+	return level[0]
 }

@@ -1,8 +1,9 @@
 // Package fisco implements ledger.Ledger on FISCO BCOS 2.x (tested on v2.11.1) using the pure-Go
 // github.com/FISCO-BCOS/go-sdk v1.1.1 (channel protocol, TLS with the chain's SDK certificates, ECDSA/secp256k1).
 //
-// Each role (admin, operator, officer, monitor, each funder) signs with its own key. Keys that are equal
-// share one connection, e.g. WeBank-only mode where the operator key is also the WeBank funder key.
+// Two keys sign: admin (deploy, role grants) and operator (the service: withdrawal records and audit anchors).
+// The service can also connect to the other nodes of the chain (NodeConfig.Peers) to show, per transaction,
+// which nodes already hold it, and the status of every node, in the explorer.
 package fisco
 
 import (
@@ -25,33 +26,37 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"sellergraph/fisco/contracts"
-	"sellergraph/fisco/internal/ledger"
+	"bouyup/fisco/contracts"
+	"bouyup/fisco/internal/ledger"
 )
 
-// NodeConfig describes how to reach one FISCO BCOS node over the channel port.
+// NodeConfig describes how to reach the chain over the channel port.
 type NodeConfig struct {
-	NodeURL  string `json:"nodeURL"` // ip:channel_port, e.g. 127.0.0.1:20200
-	GroupID  int    `json:"groupId"`
-	ChainID  int64  `json:"chainId"`
-	CAFile   string `json:"caFile"`   // nodes/<ip>/sdk/ca.crt
-	CertFile string `json:"certFile"` // nodes/<ip>/sdk/sdk.crt
-	KeyFile  string `json:"keyFile"`  // nodes/<ip>/sdk/sdk.key
+	NodeURL  string   `json:"nodeURL"`         // ip:channel_port the service submits transactions to, e.g. 127.0.0.1:20200
+	Peers    []string `json:"peers,omitempty"` // other nodes' channel ports (read-only), e.g. 127.0.0.1:20201..20203
+	GroupID  int      `json:"groupId"`
+	ChainID  int64    `json:"chainId"`
+	CAFile   string   `json:"caFile"`   // nodes/<ip>/sdk/ca.crt
+	CertFile string   `json:"certFile"` // nodes/<ip>/sdk/sdk.crt
+	KeyFile  string   `json:"keyFile"`  // nodes/<ip>/sdk/sdk.key
 }
 
-// Keys holds the raw 32-byte secp256k1 private keys of every signing role.
+// Keys holds the raw 32-byte secp256k1 private keys of the signing roles.
 type Keys struct {
 	Admin    []byte
 	Operator []byte
-	Officer  []byte
-	Monitor  []byte
-	Funders  map[string][]byte
 }
 
 // Addresses of the deployed contracts.
 type Addresses struct {
-	LoanLedger string `json:"loanLedger"`
-	AuditTrail string `json:"auditTrail"`
+	WithdrawalLedger string `json:"withdrawalLedger"`
+	AuditTrail       string `json:"auditTrail"`
+}
+
+type nodeClient struct {
+	name string
+	url  string
+	c    *client.Client
 }
 
 // Ledger is the FISCO BCOS implementation of ledger.Ledger and ledger.Admin.
@@ -59,12 +64,19 @@ type Ledger struct {
 	node     NodeConfig
 	addrs    Addresses
 	accounts ledger.Accounts
-	clients  map[string]*client.Client // by lowercase address
-	loanABI  abi.ABI
+	admin    *client.Client
+	operator *client.Client
+	nodes    []nodeClient // node0 = NodeURL (operator connection), then peers
+	wdABI    abi.ABI
 	auditABI abi.ABI
-	loanAt   common.Address
+	wdAt     common.Address
 	auditAt  common.Address
 	mu       sync.Mutex // serialize writes (keeps event order deterministic for the PoC)
+
+	cacheMu sync.Mutex
+	txOf    map[string]string // withdrawal id -> tx hash
+
+	commits commitLog // per-node block notices (step-by-step demo)
 }
 
 // ---------------------------------------------------------------- keys
@@ -119,46 +131,38 @@ func GenerateKey() ([]byte, error) {
 
 // AccountsOf derives role addresses from keys.
 func AccountsOf(k Keys) (ledger.Accounts, error) {
-	acc := ledger.Accounts{Funders: map[string]string{}}
+	var acc ledger.Accounts
 	var err error
-	set := func(dst *string, key []byte, name string) {
-		if err != nil || key == nil {
-			return
-		}
-		*dst, err = AddressOf(key)
-		if err != nil {
-			err = fmt.Errorf("%s key: %w", name, err)
+	if k.Admin != nil {
+		if acc.Admin, err = AddressOf(k.Admin); err != nil {
+			return acc, fmt.Errorf("admin key: %w", err)
 		}
 	}
-	set(&acc.Admin, k.Admin, "admin")
-	set(&acc.Operator, k.Operator, "operator")
-	set(&acc.Officer, k.Officer, "officer")
-	set(&acc.Monitor, k.Monitor, "monitor")
-	for n, fk := range k.Funders {
-		var a string
-		set(&a, fk, "funder "+n)
-		acc.Funders[n] = a
+	if k.Operator != nil {
+		if acc.Operator, err = AddressOf(k.Operator); err != nil {
+			return acc, fmt.Errorf("operator key: %w", err)
+		}
 	}
-	return acc, err
+	return acc, nil
 }
 
 // ---------------------------------------------------------------- dial / deploy
 
-func dialKey(node NodeConfig, key []byte) (*client.Client, error) {
+func dialKey(node NodeConfig, url string, key []byte) (*client.Client, error) {
 	cfg := &conf.Config{
 		IsHTTP: false, ChainID: node.ChainID, CAFile: node.CAFile, Cert: node.CertFile, Key: node.KeyFile,
-		IsSMCrypto: false, GroupID: node.GroupID, NodeURL: node.NodeURL, PrivateKey: key,
+		IsSMCrypto: false, GroupID: node.GroupID, NodeURL: url, PrivateKey: key,
 	}
 	c, err := client.Dial(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("dial FISCO BCOS node %s (group %d): %w", node.NodeURL, node.GroupID, err)
+		return nil, fmt.Errorf("dial FISCO BCOS node %s (group %d): %w", url, node.GroupID, err)
 	}
 	return c, nil
 }
 
-// Deploy deploys LoanLedger and AuditTrail with the admin key.
+// Deploy deploys WithdrawalLedger and AuditTrail with the admin key.
 func Deploy(ctx context.Context, node NodeConfig, adminKey []byte) (Addresses, error) {
-	c, err := dialKey(node, adminKey)
+	c, err := dialKey(node, node.NodeURL, adminKey)
 	if err != nil {
 		return Addresses{}, err
 	}
@@ -168,7 +172,7 @@ func Deploy(ctx context.Context, node NodeConfig, adminKey []byte) (Addresses, e
 		name, abiJSON, bin string
 		dst                *string
 	}{
-		{"LoanLedger", contracts.LoanLedgerABI, contracts.LoanLedgerBin, &out.LoanLedger},
+		{"WithdrawalLedger", contracts.WithdrawalLedgerABI, contracts.WithdrawalLedgerBin, &out.WithdrawalLedger},
 		{"AuditTrail", contracts.AuditTrailABI, contracts.AuditTrailBin, &out.AuditTrail},
 	} {
 		parsed, err := abi.JSON(strings.NewReader(d.abiJSON))
@@ -187,45 +191,49 @@ func Deploy(ctx context.Context, node NodeConfig, adminKey []byte) (Addresses, e
 	return out, nil
 }
 
-// Dial connects every role key to the node and binds the deployed contracts.
+// Dial connects the admin and operator keys to the node, opens read-only connections to the peers and binds the
+// deployed contracts. An unreachable peer is not fatal: it shows as offline in the explorer.
 func Dial(ctx context.Context, node NodeConfig, addrs Addresses, keys Keys) (*Ledger, error) {
+	if keys.Operator == nil {
+		return nil, fmt.Errorf("operator key is required")
+	}
 	acc, err := AccountsOf(keys)
 	if err != nil {
 		return nil, err
 	}
-	l := &Ledger{node: node, addrs: addrs, accounts: acc, clients: map[string]*client.Client{},
-		loanAt: common.HexToAddress(addrs.LoanLedger), auditAt: common.HexToAddress(addrs.AuditTrail)}
-	if l.loanABI, err = abi.JSON(strings.NewReader(contracts.LoanLedgerABI)); err != nil {
+	l := &Ledger{node: node, addrs: addrs, accounts: acc, txOf: map[string]string{},
+		wdAt: common.HexToAddress(addrs.WithdrawalLedger), auditAt: common.HexToAddress(addrs.AuditTrail)}
+	if l.wdABI, err = abi.JSON(strings.NewReader(contracts.WithdrawalLedgerABI)); err != nil {
 		return nil, err
 	}
 	if l.auditABI, err = abi.JSON(strings.NewReader(contracts.AuditTrailABI)); err != nil {
 		return nil, err
 	}
-	all := [][]byte{keys.Admin, keys.Operator, keys.Officer, keys.Monitor}
-	for _, k := range keys.Funders {
-		all = append(all, k)
+	if l.operator, err = dialKey(node, node.NodeURL, keys.Operator); err != nil {
+		return nil, err
 	}
-	for _, k := range all {
-		if k == nil {
-			continue
-		}
-		a, _ := AddressOf(k)
-		if _, ok := l.clients[a]; ok {
-			continue
-		}
-		c, err := dialKey(node, k)
-		if err != nil {
+	l.nodes = append(l.nodes, nodeClient{name: "node0", url: node.NodeURL, c: l.operator})
+	if keys.Admin != nil && !strings.EqualFold(acc.Admin, acc.Operator) {
+		if l.admin, err = dialKey(node, node.NodeURL, keys.Admin); err != nil {
 			l.Close()
 			return nil, err
 		}
-		l.clients[a] = c
+	} else if keys.Admin != nil {
+		l.admin = l.operator
 	}
-	if l.clients[acc.Operator] == nil {
-		l.Close()
-		return nil, fmt.Errorf("operator key is required")
+	for i, p := range node.Peers {
+		p = strings.TrimSpace(p)
+		if p == "" || p == node.NodeURL {
+			continue
+		}
+		nc := nodeClient{name: fmt.Sprintf("node%d", i+1), url: p}
+		if c, err := dialKey(node, p, keys.Operator); err == nil {
+			nc.c = c
+		}
+		l.nodes = append(l.nodes, nc)
 	}
-	for name, at := range map[string]common.Address{"LoanLedger": l.loanAt, "AuditTrail": l.auditAt} {
-		code, err := l.reader().CodeAt(ctx, at, nil)
+	for name, at := range map[string]common.Address{"WithdrawalLedger": l.wdAt, "AuditTrail": l.auditAt} {
+		code, err := l.operator.CodeAt(ctx, at, nil)
 		if err != nil {
 			l.Close()
 			return nil, err
@@ -235,36 +243,47 @@ func Dial(ctx context.Context, node NodeConfig, addrs Addresses, keys Keys) (*Le
 			return nil, fmt.Errorf("no %s contract at %s (run `sgchain deploy` first)", name, at.Hex())
 		}
 	}
+	l.watchCommits()
 	return l, nil
 }
 
 func (l *Ledger) Close() {
-	for _, c := range l.clients {
-		c.Close()
+	seen := map[*client.Client]bool{}
+	for _, c := range []*client.Client{l.admin, l.operator} {
+		if c != nil && !seen[c] {
+			seen[c] = true
+			c.Close()
+		}
+	}
+	for _, n := range l.nodes {
+		if n.c != nil && !seen[n.c] {
+			seen[n.c] = true
+			n.c.Close()
+		}
 	}
 }
 
-func (l *Ledger) reader() *client.Client { return l.clients[l.accounts.Operator] }
+func (l *Ledger) reader() *client.Client { return l.operator }
 
 // ---------------------------------------------------------------- low level
 
-func (l *Ledger) signer(addr string) (*client.Client, error) {
-	c, ok := l.clients[strings.ToLower(addr)]
-	if !ok {
-		return nil, ledger.Errorf(ledger.KindUnauthorized, "no signing key configured for %s", addr)
+const (
+	cWithdrawal = "WithdrawalLedger"
+	cAudit      = "AuditTrail"
+)
+
+func (l *Ledger) contract(name string) (abi.ABI, common.Address) {
+	if name == cAudit {
+		return l.auditABI, l.auditAt
 	}
-	return c, nil
+	return l.wdABI, l.wdAt
 }
 
-func (l *Ledger) transact(ctx context.Context, from string, audit bool, method string, args ...any) (ledger.Tx, error) {
-	c, err := l.signer(from)
-	if err != nil {
-		return ledger.Tx{}, err
+func (l *Ledger) transact(ctx context.Context, c *client.Client, contract, method string, args ...any) (ledger.Tx, error) {
+	if c == nil {
+		return ledger.Tx{}, ledger.Errorf(ledger.KindUnauthorized, "no signing key configured for %s", method)
 	}
-	parsed, at := l.loanABI, l.loanAt
-	if audit {
-		parsed, at = l.auditABI, l.auditAt
-	}
+	parsed, at := l.contract(contract)
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	bc := bind.NewBoundContract(at, parsed, c, c, c)
@@ -277,14 +296,18 @@ func (l *Ledger) transact(ctx context.Context, from string, audit bool, method s
 	if receipt.Status != types.Success {
 		return ledger.Tx{}, revertError(receipt)
 	}
-	bn, _ := strconv.ParseInt(strings.TrimPrefix(receipt.BlockNumber, "0x"), 16, 64)
-	tx := ledger.Tx{Hash: receipt.TransactionHash, BlockNumber: bn, Events: []ledger.Event{}}
+	tx := ledger.Tx{Hash: receipt.TransactionHash, BlockNumber: hexInt(receipt.BlockNumber), BlockHash: receipt.BlockHash, Events: []ledger.Event{}}
 	for _, lg := range receipt.Logs {
-		if e, ok := decodeLog(l.loanABI, l.auditABI, lg); ok {
+		if e, ok := decodeLog(lg, l.wdABI, l.auditABI); ok {
 			tx.Events = append(tx.Events, e)
 		}
 	}
 	return tx, nil
+}
+
+func hexInt(s string) int64 {
+	n, _ := strconv.ParseInt(strings.TrimPrefix(strings.TrimPrefix(s, "0x"), "0X"), 16, 64)
+	return n
 }
 
 // revertError extracts the Solidity revert reason (Error(string)) from a failed receipt.
@@ -299,11 +322,8 @@ func revertError(r *types.Receipt) error {
 	return ledger.Errorf(ledger.KindChain, "%s", r.GetErrorMessage())
 }
 
-func (l *Ledger) call(ctx context.Context, audit bool, method string, args ...any) ([]any, error) {
-	parsed, at := l.loanABI, l.loanAt
-	if audit {
-		parsed, at = l.auditABI, l.auditAt
-	}
+func (l *Ledger) call(ctx context.Context, contract, method string, args ...any) ([]any, error) {
+	parsed, at := l.contract(contract)
 	input, err := parsed.Pack(method, args...)
 	if err != nil {
 		return nil, ledger.Errorf(ledger.KindInvalid, "pack %s: %v", method, err)
@@ -342,68 +362,48 @@ func idArg(id string) ([32]byte, error) {
 	return [32]byte(h), err
 }
 
+func textArg(field, v string) ([32]byte, error) {
+	h, err := ledger.TextToBytes32(field, v)
+	return [32]byte(h), err
+}
+
 // ---------------------------------------------------------------- ledger.Admin
 
+// GrantRole grants OPERATOR on WithdrawalLedger and AUDIT_WRITER on AuditTrail (each contract has its own registry).
 func (l *Ledger) GrantRole(ctx context.Context, account string, role uint64) (ledger.Tx, error) {
-	return l.transact(ctx, l.accounts.Admin, false, "grantRole", common.HexToAddress(account), new(big.Int).SetUint64(role))
-}
-
-// GrantAuditRole grants a role on the AuditTrail contract (each contract has its own registry).
-func (l *Ledger) GrantAuditRole(ctx context.Context, account string, role uint64) (ledger.Tx, error) {
-	return l.transact(ctx, l.accounts.Admin, true, "grantRole", common.HexToAddress(account), new(big.Int).SetUint64(role))
-}
-
-func (l *Ledger) SetPolicy(ctx context.Context, p ledger.Policy) (ledger.Tx, error) {
-	return l.transact(ctx, l.accounts.Admin, false, "setPolicy", bi(p.MaxRateBps), bi(p.OfficerThreshold), bi(p.MaxFutureSkewSec))
-}
-
-func (l *Ledger) GetPolicy(ctx context.Context) (ledger.Policy, error) {
-	var p ledger.Policy
-	for _, f := range []struct {
-		m   string
-		dst *int64
-	}{{"maxRateBps", &p.MaxRateBps}, {"officerThreshold", &p.OfficerThreshold}, {"maxFutureSkew", &p.MaxFutureSkewSec}} {
-		v, err := l.call(ctx, false, f.m)
-		if err != nil {
-			return p, err
-		}
-		*f.dst = i64(v[0])
-	}
-	return p, nil
-}
-
-func (l *Ledger) HasRole(ctx context.Context, account string, role uint64) (bool, error) {
-	v, err := l.call(ctx, false, "hasRole", common.HexToAddress(account), new(big.Int).SetUint64(role))
-	if err != nil {
-		return false, err
-	}
-	return v[0].(bool), nil
-}
-
-// adminSplit routes role grants to the right contract: AuditWriter lives on AuditTrail, the rest on LoanLedger.
-type adminSplit struct{ l *Ledger }
-
-func (a adminSplit) GrantRole(ctx context.Context, account string, role uint64) (ledger.Tx, error) {
+	var last ledger.Tx
 	if role&ledger.RoleAuditWriter != 0 {
-		if _, err := a.l.GrantAuditRole(ctx, account, ledger.RoleAuditWriter); err != nil {
-			return ledger.Tx{}, err
+		tx, err := l.transact(ctx, l.admin, cAudit, "grantRole", common.HexToAddress(account), new(big.Int).SetUint64(ledger.RoleAuditWriter))
+		if err != nil {
+			return tx, err
+		}
+		last = tx
+	}
+	if rest := role &^ ledger.RoleAuditWriter; rest != 0 {
+		return l.transact(ctx, l.admin, cWithdrawal, "grantRole", common.HexToAddress(account), new(big.Int).SetUint64(rest))
+	}
+	return last, nil
+}
+
+// HasRole checks AUDIT_WRITER on AuditTrail and the other bits on WithdrawalLedger.
+func (l *Ledger) HasRole(ctx context.Context, account string, role uint64) (bool, error) {
+	check := func(contract string, bits uint64) (bool, error) {
+		v, err := l.call(ctx, contract, "hasRole", common.HexToAddress(account), new(big.Int).SetUint64(bits))
+		if err != nil {
+			return false, err
+		}
+		return v[0].(bool), nil
+	}
+	if role&ledger.RoleAuditWriter != 0 {
+		if ok, err := check(cAudit, ledger.RoleAuditWriter); err != nil || !ok {
+			return false, err
 		}
 	}
 	if rest := role &^ ledger.RoleAuditWriter; rest != 0 {
-		return a.l.GrantRole(ctx, account, rest)
+		return check(cWithdrawal, rest)
 	}
-	return ledger.Tx{}, nil
+	return true, nil
 }
-func (a adminSplit) SetPolicy(ctx context.Context, p ledger.Policy) (ledger.Tx, error) {
-	return a.l.SetPolicy(ctx, p)
-}
-func (a adminSplit) GetPolicy(ctx context.Context) (ledger.Policy, error) { return a.l.GetPolicy(ctx) }
-func (a adminSplit) HasRole(ctx context.Context, acc string, r uint64) (bool, error) {
-	return a.l.HasRole(ctx, acc, r)
-}
-
-// Admin returns an ledger.Admin that grants AUDIT_WRITER on AuditTrail and other roles on LoanLedger.
-func (l *Ledger) Admin() ledger.Admin { return adminSplit{l} }
 
 // ---------------------------------------------------------------- info
 
@@ -416,16 +416,9 @@ func (l *Ledger) Info(ctx context.Context) (ledger.ChainInfo, error) {
 	if err != nil {
 		return ledger.ChainInfo{}, err
 	}
-	pol, err := l.GetPolicy(ctx)
-	if err != nil {
-		return ledger.ChainInfo{}, err
-	}
-	acc := map[string]string{"admin": l.accounts.Admin, "operator": l.accounts.Operator, "officer": l.accounts.Officer, "monitor": l.accounts.Monitor}
-	for k, v := range l.accounts.Funders {
-		acc["funder:"+k] = v
-	}
-	return ledger.ChainInfo{Backend: "fisco-bcos", BlockNumber: bn, ChainTime: now, Policy: pol, Accounts: acc,
-		Contracts: map[string]string{"LoanLedger": l.addrs.LoanLedger, "AuditTrail": l.addrs.AuditTrail}}, nil
+	return ledger.ChainInfo{Backend: "fisco-bcos", BlockNumber: bn, ChainTime: now, GroupID: l.node.GroupID, ChainID: l.node.ChainID,
+		Accounts:  map[string]string{"admin": l.accounts.Admin, "operator": l.accounts.Operator},
+		Contracts: map[string]string{"WithdrawalLedger": l.addrs.WithdrawalLedger, "AuditTrail": l.addrs.AuditTrail}}, nil
 }
 
 // Now returns the latest block timestamp in seconds (FISCO block timestamps are milliseconds).
@@ -442,11 +435,7 @@ func (l *Ledger) Now(ctx context.Context) (int64, error) {
 	if err != nil {
 		return 0, ledger.Errorf(ledger.KindChain, "getBlockByNumber: %v", err)
 	}
-	ms, err := strconv.ParseInt(strings.TrimPrefix(b.Timestamp, "0x"), 16, 64)
-	if err != nil {
-		return 0, ledger.Errorf(ledger.KindChain, "block timestamp %q: %v", b.Timestamp, err)
-	}
-	return ms / 1000, nil
+	return hexInt(b.Timestamp) / 1000, nil
 }
 
 var _ ledger.Ledger = (*Ledger)(nil)

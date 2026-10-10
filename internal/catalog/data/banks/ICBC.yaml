@@ -1,0 +1,125 @@
+# Mock profile for the BouyUp demo. Not the real policy or terms of ICBC.
+code: ICBC
+name: Industrial and Commercial Bank of China
+localName: 中国工商银行
+region: CN
+headquarters: CN-BJ
+type: Large state-owned commercial bank
+active: true
+profile: >-
+  The largest bank in China, with a conservative credit culture. Prefers established manufacturers and
+  brand owners with factories, tax records and long banking relationships.
+
+limits:
+  minWithdrawal: 500000
+  maxWithdrawal: 200000000
+  maxSharePercent: 60
+  dailyCap: 2000000000
+  reimbursementDays: 3
+  feePercent: 0.08
+  maxLoanAmount: 100000000
+  minAnnualRatePercent: 4.5
+  maxAnnualRatePercent: 10
+  maxTenorDays: 365
+  minStoreAgeMonths: 36
+  minStoreRating: 4.6
+
+policy:
+  version: "2026.10-1"
+  updatedAt: "2026-10-01"
+  summary: >-
+    ICBC lends to the solid middle of e-commerce: manufacturers selling online, brand owners with factories, and
+    distributors with long tax histories. It offers the cheapest money but asks for the most proof, and it does
+    not chase young or trend-driven shops.
+  riskAppetite: >-
+    Low. Prefers seasoned businesses; accepts lower margins in exchange for certainty.
+  sectors:
+    prefer:
+      - name: Manufacturers selling their own products online
+        why: Physical assets and production history.
+      - name: Home appliances and furniture brands
+        why: Durable goods with clear distribution chains.
+      - name: Industrial and office supplies sold B2B on 1688 or JD
+        why: Repeat corporate buyers, low return rates.
+    cautious:
+      - name: Apparel
+        why: Only for brand owners with their own production lines.
+      - name: Food
+        why: Only with SC production licences and a clean food-safety record.
+    avoid:
+      - name: Dropshipping and trend-driven resale
+        why: No assets and unpredictable demand.
+      - name: Live-commerce studios without their own products
+        why: Income depends on hosts and traffic purchases.
+      - name: Cross-border goods without customs records
+        why: Compliance risk.
+    note: ICBC asks "would this business exist without e-commerce?" A yes counts in the seller's favour.
+  regions:
+    prefer:
+      - code: CN-JS
+        name: Jiangsu
+        why: Manufacturing base with many long-standing ICBC clients.
+      - code: CN-ZJ
+        name: Zhejiang
+        why: Manufacturing and brand owners.
+      - code: CN-GD
+        name: Guangdong
+        why: Factories in Dongguan and Foshan.
+      - code: CN-SH
+        name: Shanghai
+        why: Brand headquarters.
+    cautious:
+      - code: CN-SD
+        name: Shandong
+        why: Many small wholesale traders around Linyi; require proof of own stock.
+    avoid: []
+    note: Industrial clusters are preferred to wholesale markets.
+  customers:
+    prefer:
+      - name: Companies with three or more years of tax filings
+        why: Financial statements can be checked.
+      - name: Existing ICBC corporate clients
+        why: Full payment history available.
+    cautious:
+      - name: Individual merchants (个体工商户)
+        why: Smaller amounts and personal guarantees preferred.
+    avoid:
+      - name: Companies with administrative penalties for product quality in the last 2 years
+        why: Bank-wide policy.
+  useOfFunds:
+    - Raw materials, production, or finished stock from contracted suppliers.
+    - Payment directly to suppliers with signed contracts.
+  positiveSignals:
+    - Audited financial statements.
+    - Long-term supply contracts.
+    - Export qualifications and customs records.
+  redFlags:
+    - Revenue in platform data much higher than in tax filings.
+    - Frequent changes of legal representative.
+  escalateWhen:
+    - The seller's tax-declared revenue is less than half of platform revenue.
+  dealBreakers:
+    - Court enforcement records against the company or its legal representative.
+    - Environmental or safety penalties that stopped production.
+  reviewerNotes: >-
+    ICBC brings the lowest cost of funds. Give it a large share only for seasoned manufacturers; for everyone
+    else keep it small or leave it out.
+
+contract:
+  contractNo: BU-ICBC-2026-01
+  title: Payment facilitation and reimbursement agreement
+  parties: [Industrial and Commercial Bank of China, BouyUp]
+  status: active
+  effectiveFrom: "2026-04-01"
+  expiresOn: "2027-03-31"
+  creditLine: 8000000000
+  reimbursementTerms: ICBC reimburses its share within 3 business days of the on-chain record.
+  feeTerms: 0.08% of ICBC's share.
+  evidenceTerms: The on-chain withdrawal record is the evidence of payment; ICBC reconciles weekly.
+  dataTerms: Salted references only; processing follows the PRC Personal Information Protection Law.
+  governingLaw: Laws of the People's Republic of China
+  disputeResolution: China International Economic and Trade Arbitration Commission (CIETAC), Beijing
+  termination: 30 days' notice.
+  keyClauses:
+    - ICBC may require its share to be at most 60% of any single withdrawal.
+    - Weekly reconciliation report.

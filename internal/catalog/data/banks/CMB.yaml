@@ -1,0 +1,123 @@
+# Mock profile for the BouyUp demo. Not the real policy or terms of China Merchants Bank.
+code: CMB
+name: China Merchants Bank
+localName: 招商银行
+region: CN
+headquarters: CN-GD
+type: Joint-stock commercial bank
+active: true
+profile: >-
+  Retail-focused bank known for quality customers and service. Likes premium consumer brands and owners with
+  strong personal credit, and stays away from low-price mass sellers.
+
+limits:
+  minWithdrawal: 100000
+  maxWithdrawal: 100000000
+  maxSharePercent: 50
+  dailyCap: 1000000000
+  reimbursementDays: 2
+  feePercent: 0.12
+  maxLoanAmount: 60000000
+  minAnnualRatePercent: 5.5
+  maxAnnualRatePercent: 12
+  maxTenorDays: 180
+  minStoreAgeMonths: 24
+  minStoreRating: 4.7
+
+policy:
+  version: "2026.10-1"
+  updatedAt: "2026-10-01"
+  summary: >-
+    China Merchants Bank looks for quality: premium or well-positioned brands, high ratings, loyal customers and
+    owners who are good private-banking clients themselves. It prefers wealthier urban markets and does not want
+    to compete on low-price, high-volume sellers.
+  riskAppetite: >-
+    Moderate for quality brands; low for price-driven sellers.
+  sectors:
+    prefer:
+      - name: Premium beauty and skincare brands with NMPA filings
+        why: Strong margins and loyal customers.
+      - name: Mother and baby brands
+        why: High-value, loyal customers in the bank's core urban markets.
+      - name: Design-led home and lifestyle brands
+        why: Brand value and good margins.
+      - name: Tea and specialty food brands
+        why: Gift market with stable seasonal peaks.
+    cautious:
+      - name: Electronics accessories
+        why: Fine for own brands; generic accessories compete only on price.
+    avoid:
+      - name: Low-price mass sellers on discount platforms
+        why: Thin margins leave no room for repayment shocks.
+      - name: Counterfeit-prone categories without brand authorisation (handbags, sneakers)
+        why: Reputational risk.
+      - name: Grey imports (daigou)
+        why: Customs and authenticity risk.
+    note: Ask what makes the brand worth more than a generic product.
+  regions:
+    prefer:
+      - code: CN-GD
+        name: Guangdong
+        why: Home market (Shenzhen).
+      - code: CN-SH
+        name: Shanghai
+        why: Premium brand cluster.
+      - code: CN-BJ
+        name: Beijing
+        why: Affluent customer base.
+      - code: CN-ZJ
+        name: Zhejiang
+        why: Many quality Tmall brands in Hangzhou.
+    cautious:
+      - code: CN-SD
+        name: Shandong
+        why: Many price-driven wholesale sellers; check brand positioning.
+      - code: CN-HA
+        name: Henan
+        why: Same as Shandong.
+    avoid: []
+    note: Premium brands from any province are welcome; the cautious list is about the typical seller there.
+  customers:
+    prefer:
+      - name: Owners who are CMB private-banking or Sunflower (金葵花) clients
+        why: Known, wealthy owners with strong personal credit.
+      - name: Shops with ratings of 4.8 or above
+        why: Quality signal.
+    cautious:
+      - name: Shops with heavy discounting in the last two campaigns
+        why: Margins may not cover repayment.
+    avoid:
+      - name: Owners with personal credit card delinquencies
+        why: Bank-wide policy.
+  useOfFunds:
+    - Stock for brand campaigns, paid to authorised manufacturers.
+  positiveSignals:
+    - Brand trademark registered in the seller's company name.
+    - Average order value above the category median.
+  redFlags:
+    - Brand authorisation letters that cannot be verified with the brand owner.
+    - Rapid price cuts before applying.
+  escalateWhen:
+    - Brand ownership is unclear.
+  dealBreakers:
+    - Counterfeit goods.
+  reviewerNotes: >-
+    CMB fits quality brands; give it a meaningful share there and leave it out for price-driven sellers.
+
+contract:
+  contractNo: BU-CMB-2026-01
+  title: Payment facilitation and reimbursement agreement
+  parties: [China Merchants Bank, BouyUp]
+  status: active
+  effectiveFrom: "2026-02-01"
+  expiresOn: "2027-07-31"
+  creditLine: 4000000000
+  reimbursementTerms: China Merchants Bank reimburses its share within 2 business days of the on-chain record.
+  feeTerms: 0.12% of China Merchants Bank's share.
+  evidenceTerms: The on-chain withdrawal record is the evidence of payment.
+  dataTerms: Salted references only; processing follows the PRC Personal Information Protection Law.
+  governingLaw: Laws of the People's Republic of China
+  disputeResolution: Shenzhen Court of International Arbitration (SCIA)
+  termination: 30 days' notice.
+  keyClauses:
+    - China Merchants Bank may decline shares in withdrawals for sellers outside its preferred customer profile.

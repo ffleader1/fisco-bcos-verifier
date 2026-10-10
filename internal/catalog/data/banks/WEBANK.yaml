@@ -1,0 +1,132 @@
+# Mock profile for the BouyUp demo. Not the real policy or terms of WeBank.
+code: WEBANK
+name: WeBank
+localName: 深圳前海微众银行
+region: CN
+headquarters: CN-GD
+type: Digital bank (online-only)
+active: true
+profile: >-
+  Online-only bank built for small businesses and individuals, and the operator of BouyUp's credit
+  product. Lives on data: platform history, payment flows and federated risk scores. Comfortable with small,
+  young merchants when the data is consistent.
+
+limits:
+  minWithdrawal: 50000
+  maxWithdrawal: 100000000
+  maxSharePercent: 100
+  dailyCap: 1000000000
+  reimbursementDays: 1
+  feePercent: 0.1
+  maxLoanAmount: 50000000
+  minAnnualRatePercent: 8
+  maxAnnualRatePercent: 15
+  maxTenorDays: 180
+  minStoreAgeMonths: 12
+  minStoreRating: 4.0
+
+policy:
+  version: "2026.10-1"
+  updatedAt: "2026-10-01"
+  summary: >-
+    WeBank funds small e-commerce merchants on Douyin, Taobao, Tmall, JD and Pinduoduo, based on what their data
+    shows rather than on collateral. It accepts young shops and thin credit files if the shop data, invoices and
+    payout flows agree with each other. It is the default bank of a split and can take the whole amount.
+  riskAppetite: >-
+    Moderate. Willing to lend to small and new merchants; very sensitive to data that does not reconcile.
+  sectors:
+    prefer:
+      - name: Electronics accessories from the Pearl River Delta supply chain
+        why: Suppliers are easy to verify and prices are transparent.
+      - name: Everyday consumer goods (home, kitchen, cleaning, small appliances)
+        why: Steady demand and low return rates.
+      - name: Apparel and footwear with two or more peak seasons of history
+        why: The bank has deep data on Double 11 and 618 seasonality.
+      - name: Packaged snacks and regional food brands
+        why: Fast-moving and strong on Douyin; fine with food production licences (SC numbers).
+    cautious:
+      - name: Cosmetics and skincare
+        why: Requires NMPA filing for every product; imported items need customs papers.
+      - name: Fresh produce
+        why: Accepted when cold-chain logistics is contracted and spoilage is priced in.
+      - name: Live-commerce-only shops
+        why: Check that sales survive without the host; ask about refunds after livestreams.
+    avoid:
+      - name: Tobacco, e-cigarettes and alcohol without licences
+        why: Regulated goods.
+      - name: Medical devices and drugs
+        why: Outside the product scope.
+      - name: Second-hand luxury goods
+        why: Authenticity cannot be verified at scale.
+    note: The data matters more than the category. A cautious category with perfect data can still be funded.
+  regions:
+    prefer:
+      - code: CN-GD
+        name: Guangdong
+        why: Home market; supply chains in Shenzhen and Dongguan are well understood.
+      - code: CN-ZJ
+        name: Zhejiang
+        why: Deep data on Taobao and Yiwu sellers.
+      - code: CN-FJ
+        name: Fujian
+        why: Footwear and apparel clusters with long payout history.
+    cautious:
+      - code: CN-YN
+        name: Yunnan
+        why: Border trade; check customs records for imported goods.
+    avoid: []
+    note: WeBank lends nationwide online. Region only shifts confidence in supplier checks.
+  customers:
+    prefer:
+      - name: Merchants with 12 or more months of platform payout history
+        why: Enough data for the scorecard and the federated (FATE) score.
+      - name: Repeat WeBank borrowers who repaid on time
+        why: Best predictor of future repayment.
+    cautious:
+      - name: Merchants with credit inquiries from many lenders in the last 3 months
+        why: Possible debt stacking; ask what the other loans are for.
+    avoid:
+      - name: Merchants on court enforcement lists (失信被执行人)
+        why: Bank-wide policy.
+  useOfFunds:
+    - Stock for a dated campaign, paid straight to the supplier.
+    - Not for paying other lenders.
+  positiveSignals:
+    - Waybill match rate at or above 95%.
+    - Invoice prices consistent with the 3-month average.
+    - Stable or growing share of payouts routed to WeBank.
+  redFlags:
+    - Waybill match rate below 95% without an explanation backed by documents.
+    - Declared purchase price more than 20% above invoices.
+    - Supplier in the same linked group as the seller (shared ID, phone, address, tax number or account).
+    - Sales spike shortly before applying.
+  escalateWhen:
+    - Fraud flags that Agent 1 could not clear with documents.
+    - The seller asks for a human review.
+  dealBreakers:
+    - Fake orders or brushing confirmed.
+    - Forged invoices.
+  reviewerNotes: >-
+    WeBank can always take whatever share the other banks cannot. If no other bank in the region fits the
+    seller's profile, a 100% WeBank split is acceptable.
+
+contract:
+  contractNo: BU-WEBANK-2026-01
+  title: Payment facilitation and reimbursement agreement
+  parties: [WeBank, BouyUp]
+  status: active
+  effectiveFrom: "2026-01-01"
+  expiresOn: "2028-12-31"
+  creditLine: 5000000000
+  reimbursementTerms: WeBank reimburses its share on the next business day through the daily settlement.
+  feeTerms: 0.10% of WeBank's share.
+  evidenceTerms: >-
+    The FISCO BCOS withdrawal record is the evidence of payment. Records can be produced to the Guangzhou
+    Arbitration Commission through the consortium's arbitration node.
+  dataTerms: Salted references only; processing follows the PRC Personal Information Protection Law.
+  governingLaw: Laws of the People's Republic of China
+  disputeResolution: Guangzhou Arbitration Commission
+  termination: 30 days' notice.
+  keyClauses:
+    - WeBank operates a consensus node of the consortium chain.
+    - Settlement files are reconciled daily against the on-chain records.
